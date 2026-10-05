@@ -1,0 +1,8 @@
+string task_instruction
+string operator_id
+string task_category
+string[] tags
+---
+bool success
+string episode_id
+string message

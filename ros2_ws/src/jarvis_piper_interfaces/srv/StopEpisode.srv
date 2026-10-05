@@ -1,0 +1,9 @@
+bool success_label
+string notes
+---
+bool success
+string episode_id
+uint32 num_frames
+float64 duration_sec
+string file_path
+float64 qa_score

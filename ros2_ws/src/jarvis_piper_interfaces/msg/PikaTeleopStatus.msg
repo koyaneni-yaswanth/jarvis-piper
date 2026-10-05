@@ -1,0 +1,8 @@
+builtin_interfaces/Time stamp
+bool is_connected
+bool clutch_active
+bool recording_trigger
+int32 error_code
+string arm_id
+geometry_msgs/PoseStamped current_pose
+float64 grip_value

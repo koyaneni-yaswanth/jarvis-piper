@@ -1,0 +1,13 @@
+# JARVIS-PiPER Multi-Modal Time Synchronizer Configuration
+synchronizer:
+  target_rate_hz: 30.0
+  slop_window_ms: 25.0
+  buffer_capacity: 500
+  base_frame: "base_link"
+  tcp_frame: "piper_gripper_base"
+  sync_topic: "/jarvis_piper/sync_frame"
+
+tolerances:
+  max_jitter_ms: 25.0
+  max_clock_drift_ms: 100.0
+  drop_threshold_pct: 2.0

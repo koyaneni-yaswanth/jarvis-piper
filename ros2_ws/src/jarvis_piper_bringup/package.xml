@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>jarvis_piper_bringup</name>
+  <version>1.0.0</version>
+  <description>Master Bringup and Mode Launch System for JARVIS PiPER</description>
+  <maintainer email="recvn@example.com">Yash</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>jarvis_piper_interfaces</exec_depend>
+  <exec_depend>jarvis_piper_sync</exec_depend>
+  <exec_depend>jarvis_piper_recorder</exec_depend>
+  <exec_depend>jarvis_piper_tools</exec_depend>
+  <exec_depend>jarvis_piper_monitor</exec_depend>
+  <exec_depend>jarvis_piper_replay</exec_depend>
+  <exec_depend>jarvis_piper_perception</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

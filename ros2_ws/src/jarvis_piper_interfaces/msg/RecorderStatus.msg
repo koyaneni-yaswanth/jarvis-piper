@@ -1,0 +1,6 @@
+bool is_recording
+string current_episode_id
+uint32 recorded_frames
+float64 elapsed_seconds
+float64 buffer_usage_pct
+string active_task_instruction

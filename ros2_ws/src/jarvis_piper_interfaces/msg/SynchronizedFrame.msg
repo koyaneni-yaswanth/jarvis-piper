@@ -1,0 +1,13 @@
+builtin_interfaces/Time timestamp
+uint32 step_index
+sensor_msgs/JointState joint_state
+float64 gripper_position
+float64 gripper_velocity
+float64 gripper_effort
+geometry_msgs/PoseStamped tcp_pose
+geometry_msgs/PoseStamped teleop_input_pose
+trajectory_msgs/JointTrajectoryPoint commanded_joint_state
+sensor_msgs/Image wrist_image
+sensor_msgs/Image overhead_image
+sensor_msgs/Image depth_image
+sensor_msgs/Imu imu_data

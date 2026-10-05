@@ -1,0 +1,12 @@
+string episode_id
+string task_instruction
+string task_category
+string operator_id
+string robot_type
+string execution_mode
+bool success_label
+float64 duration_sec
+uint32 total_steps
+string start_timestamp
+string end_timestamp
+string[] tags

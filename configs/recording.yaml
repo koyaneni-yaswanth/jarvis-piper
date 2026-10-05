@@ -1,0 +1,17 @@
+# JARVIS-PiPER Recording Engine Configuration
+recorder:
+  output_dir: "dataset/raw"
+  target_fps: 30.0
+  async_workers: 4
+  queue_capacity: 1000
+  write_streaming_journal: true
+  compress_video: true
+  video_codec: "mp4v"
+  jpeg_quality: 90
+  save_depth_png: true
+  save_mcap: true
+
+triggers:
+  enable_hardware_trigger: true
+  hardware_trigger_topic: "/pika/button_events"
+  enable_service_triggers: true

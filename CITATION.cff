@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use JARVIS-PiPER in your research, please cite it as below."
+title: "JARVIS-PiPER: An Open Embodied-AI Data Collection and Visual World Model Framework for PiPER Robotic Manipulation"
+authors:
+  - family-names: "JARVIS Research Team"
+    given-names: "Embodied AI Division"
+version: 1.0.0
+date-released: 2026-10-05
+license: "Apache-2.0"
+repository-code: "https://github.com/your-org/jarvis-piper"
+keywords:
+  - robotics
+  - ros2
+  - embodied-ai
+  - piper-arm
+  - pika-sense
+  - v-jepa
+  - imitation-learning
+  - dataset-collection

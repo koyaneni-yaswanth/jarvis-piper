@@ -1,0 +1,42 @@
+# JARVIS-PiPER V-JEPA Visual World Model Configuration
+model:
+  name: "vjepa_vit_base"
+  patch_size: 16
+  embed_dim: 384
+  num_heads: 6
+  depth: 6
+  predictor_embed_dim: 192
+  predictor_depth: 4
+  predictor_num_heads: 4
+  ema_decay: 0.996
+  mask_ratio_spatial: 0.60
+  mask_ratio_temporal: 0.50
+
+data:
+  dataset_dir: "dataset/raw"
+  clip_length: 16
+  frame_stride: 2
+  image_size: [224, 224]
+  num_workers: 2
+  include_depth: false
+  include_robot_state: true
+  robot_state_dim: 8
+
+training:
+  epochs: 20
+  batch_size: 4
+  learning_rate: 1.0e-4
+  weight_decay: 0.05
+  mixed_precision: "fp16"
+  gradient_accumulation_steps: 1
+  checkpoint_frequency: 5
+  validation_frequency: 2
+  seed: 42
+  device: "auto" # "auto", "cuda", or "cpu"
+  resume_from: null
+  output_dir: "models/checkpoints/vjepa"
+
+logging:
+  tensorboard: true
+  wandb: false
+  project_name: "jarvis-piper-vjepa"

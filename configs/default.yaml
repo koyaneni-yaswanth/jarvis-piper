@@ -1,0 +1,24 @@
+# JARVIS-PiPER Default Master Configuration
+system:
+  project_name: "JARVIS-PiPER"
+  version: "1.0.0"
+  mode: "mock" # Options: hardware, simulation, mock, replay
+  seed: 42
+
+paths:
+  raw_data_dir: "dataset/raw"
+  processed_data_dir: "dataset/processed"
+  exports_dir: "dataset/exports"
+  models_dir: "models/checkpoints"
+  experiments_dir: "experiments"
+  configs_dir: "configs"
+
+ros2:
+  domain_id: 10
+  rmw_implementation: "rmw_cyclonedds_cpp"
+  use_sim_time: false
+
+hardware:
+  arm: "piper_6dof"
+  gripper: "pika_two_finger"
+  teleoperator: "pika_sense"

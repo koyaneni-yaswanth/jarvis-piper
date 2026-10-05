@@ -1,0 +1,69 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / C++ build artifacts
+*.o
+*.so
+*.dylib
+*.a
+
+# ROS 2 Build directories
+build/
+install/
+log/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Data & large media files
+dataset/raw/*
+!dataset/raw/.gitkeep
+dataset/processed/*
+!dataset/processed/.gitkeep
+dataset/exports/*
+!dataset/exports/.gitkeep
+*.bag
+*.db3
+*.mcap
+*.mp4
+*.avi
+*.mkv
+*.h5
+*.hdf5
+*.npz
+
+# Checkpoints & model weights
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+models/exported/*
+!models/exported/.gitkeep
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+
+# Logs & experiments
+experiments/logs/
+experiments/results/
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration overrides (never commit machine-specific paths)
+configs/local.yaml
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

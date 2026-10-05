@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  jarvis-piper:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: jarvis_piper_runtime
+    environment:
+      - ROS_DISTRO=lyrical
+      - MODE=mock
+    volumes:
+      - ./dataset:/workspace/dataset
+      - ./experiments:/workspace/experiments
+      - ./models:/workspace/models
+    network_mode: host
+    stdin_open: true
+    tty: true
+
+  jarvis-piper-dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: jarvis_piper_dev
+    environment:
+      - ROS_DISTRO=lyrical
+      - MODE=mock
+    volumes:
+      - .:/workspace
+    network_mode: host
+    stdin_open: true
+    tty: true

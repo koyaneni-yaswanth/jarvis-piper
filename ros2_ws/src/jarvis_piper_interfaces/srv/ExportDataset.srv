@@ -1,0 +1,8 @@
+string format
+string output_path
+bool overwrite
+---
+bool success
+string exported_path
+uint32 total_episodes
+string message

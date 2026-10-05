@@ -1,0 +1,13 @@
+# AgileX PIKA Sense & Station Workflow Configuration
+pika:
+  workspace_path: "~/pika_ros"
+  setup_script: "~/pika_ros/install/setup.bash"
+  sensor_start_script: "~/pika_ros/scripts/start_single_sensor_whit_teleop.bash"
+  teleop_launch_package: "pika_remote_agx_arm"
+  teleop_launch_file: "teleop_single_piper.launch.py"
+  conda_env: "pika"
+  auto_source_conda_packages: true
+
+dual_arm:
+  multi_sensor_script: "~/pika_ros/scripts/start_multi_sensor_whit_teleop.bash"
+  dual_teleop_launch: "teleop_double_piper.launch.py"

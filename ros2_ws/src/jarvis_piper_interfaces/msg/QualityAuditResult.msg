@@ -1,0 +1,9 @@
+string episode_id
+bool passed
+float64 frame_drop_rate
+float64 max_jitter_ms
+float64 mean_frequency_hz
+bool kinematics_valid
+bool visual_valid
+float64 qa_score
+string[] violations
