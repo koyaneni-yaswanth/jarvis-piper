@@ -90,7 +90,7 @@ It bridges teleoperation, sensory synchronization, crash-resilient raw recording
 
 ### 1. Clone & Setup
 ```bash
-git clone https://github.com/your-org/jarvis-piper.git
+git clone https://github.com/koyaneni-yaswanth/jarvis-piper.git
 cd jarvis-piper
 ./scripts/install.sh
 ./scripts/setup.sh
