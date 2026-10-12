@@ -59,6 +59,9 @@ jarvis-pick-place-sim:
 jarvis-hardware-readiness:
 	python scripts/hardware_readiness_audit.py
 
+audit-and-validate:
+	python scripts/audit_and_validate.py
+
 readme-command-test:
 	python scripts/test_readme_commands.py
 

@@ -11,6 +11,7 @@ import numpy as np
 from world_model.spatial import PiperKinematics
 from learning.conventional.controller import ConventionalController
 from jarvis_piper.safety.supervisor import SafetySupervisor
+from jarvis_piper.perception.detector import JarvisPerceptionDetector
 
 
 class PickAndPlaceTask:
@@ -24,6 +25,7 @@ class PickAndPlaceTask:
         self.kinematics = PiperKinematics()
         self.controller = ConventionalController()
         self.safety = SafetySupervisor()
+        self.perception = JarvisPerceptionDetector()
         self.max_retries = 3
 
     def execute_task(
@@ -32,6 +34,8 @@ class PickAndPlaceTask:
         target_object: str = "red_cube",
         destination: str = "blue_tray",
         initial_q: Optional[List[float]] = None,
+        rgb_image: Optional[np.ndarray] = None,
+        depth_image: Optional[np.ndarray] = None,
     ) -> Dict[str, Any]:
         """
         Executes the parameterized 21-step pick-and-place sequence with empirical state verification.
@@ -49,10 +53,14 @@ class PickAndPlaceTask:
         current_q = list(initial_q or [0.0, 0.5, -0.5, 0.0, 0.0, 0.0])
         current_stroke = 0.035
 
-        # 1. Perception & Target Localization (Mock/Real)
-        # Target cube coordinates in workspace (x, y, z) on tabletop
-        obj_pos = [0.45, -0.08, 0.32]
-        dest_pos = [0.42, 0.08, 0.33]
+        # 1. Perception & Target Localization via YOLO11 / RGB-D
+        print(f" Step 1-4: Observing scene and detecting '{target_object}' and '{destination}' via YOLO11...")
+        obj_pos, dest_pos = self.perception.localize_target_and_destination(
+            target_name=target_object,
+            destination_name=destination,
+            rgb_image=rgb_image,
+            depth_image=depth_image,
+        )
 
         print(" Step 1-4: Observing scene and localizing target object...")
         execution_log.append({"step": "localize", "object": target_object, "pos": obj_pos})
