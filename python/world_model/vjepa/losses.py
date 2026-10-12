@@ -41,6 +41,11 @@ class VJEPALoss:
             tgt_arr = np.asarray(target)
             return float(np.mean(np.abs(pred_arr - tgt_arr)))
 
+        if not isinstance(predicted, torch.Tensor):
+            predicted = torch.as_tensor(predicted, dtype=torch.float32)
+        if not isinstance(target, torch.Tensor):
+            target = torch.as_tensor(target, dtype=torch.float32)
+
         if self.loss_type == "l1":
             pred_loss = F.l1_loss(predicted, target)
         elif self.loss_type == "smooth_l1":

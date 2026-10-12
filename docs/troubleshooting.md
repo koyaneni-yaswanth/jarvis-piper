@@ -1,54 +1,68 @@
-# Troubleshooting & Diagnostics
+# JARVIS-PiPER Troubleshooting & Diagnostics Guide
 
-This document outlines solutions to common hardware, networking, ROS 2, and environment issues.
-
----
-
-## 1. Quick Diagnostics
-
-Always begin by running the system doctor:
-
-```bash
-jarvis-piper doctor
-```
+This document catalogs common operational issues, diagnostic commands, and resolutions across physical hardware, simulation, and model inference.
 
 ---
 
-## 2. Common Issues & Solutions
+## 1. Hardware & Driver Issues
 
-### A. CAN-bus Interface (`can0`) Down or Not Detected
-- **Symptom**: PiPER arm does not respond; `check_hardware.sh` reports no CAN device.
-- **Solution**:
-  1. Verify USB-to-CAN adapter is plugged in: `lsusb`
-  2. Bring up interface:
-     ```bash
-     sudo ip link set can0 type can bitrate 1000000
-     sudo ip link set can0 up
-     ```
-  3. Verify CAN traffic: `candump can0`
-
-### B. ROS 2 Domain ID Conflicts
-- **Symptom**: Multiple machines on the local network interfere with topic streams.
-- **Solution**:
-  1. Ensure `export ROS_DOMAIN_ID=10` is set in all terminals (or run `source scripts/setup.sh`).
-  2. Ensure DDS discovery multicast is permitted on the firewall.
-
-### C. Camera Topic Disconnections or Frame Drops
-- **Symptom**: Wrist camera FPS drops below 30 or fails to open.
-- **Solution**:
-  1. Verify camera permissions: `sudo chmod 666 /dev/video*`
-  2. Check USB 3.0 bandwidth contention: connect arm CAN adapter and camera to separate USB root hubs.
-
-### D. Colcon Build Fails with Python Setuptools Warnings
-- **Symptom**: Warning regarding deprecated `tests_require` on Python 3.14.
-- **Solution**: JARVIS-PiPER packages use modern `ament_python` specifications without deprecated setuptools keys. Clean existing cache:
+### Q1: SocketCAN `can0` interface is DOWN or cannot be opened
+* **Symptom:** `PiperHardwareAdapter.connect()` reports `SocketCAN interface 'can0' not found or DOWN`.
+* **Root Cause:** CAN-to-USB adapter unplugged, incorrect permissions, or unconfigured bitrate.
+* **Resolution:**
   ```bash
-  ./scripts/clean.sh && ./scripts/build.sh
+  # Check if adapter is enumerated on USB
+  lsusb | grep -i -E "can|candle|agilex"
+  
+  # Configure and bring up can0 at 1 Mbps
+  sudo ip link set can0 type can bitrate 1000000
+  sudo ip link set can0 up
+  
+  # Verify interface state
+  ip link show can0
   ```
 
-### E. PyTorch Not Installed in Minimal Environments
-- **Symptom**: `train_vjepa` or `evaluate_vjepa` reports PyTorch missing.
-- **Solution**: JARVIS-PiPER automatically falls back to simulated smoke tests so workflows do not crash. To run GPU training, install PyTorch into your virtual environment:
+### Q2: PIKA Sense SteamVR Lighthouse Dongle not detected
+* **Symptom:** `PikaSenseAdapter.connect()` reports `SteamVR wireless receiver (VID 0x28de) not detected`.
+* **Root Cause:** Udev permissions missing or receiver unplugged.
+* **Resolution:**
   ```bash
-  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+  sudo cp scripts/81-vive.rules /etc/udev/rules.d/
+  sudo udevadm control --reload-rules && sudo udevadm trigger
   ```
+  Unplug and reconnect the SteamVR wireless dongle.
+
+---
+
+## 2. Multi-Modal Synchronization & Recording
+
+### Q3: High Jitter Warning ($\sigma > 2.0\text{ ms}$) during recording
+* **Symptom:** Quality auditor flags `FAIL_SYNC_JITTER` on recorded episodes.
+* **Root Cause:** Heavy background CPU load or disk I/O contention during video encoding.
+* **Resolution:**
+  * Ensure video frames are enqueued to the asynchronous thread rather than encoded in the main ROS 2 callback thread.
+  * Reduce image resolution to 480p ($640\times 480$) or 240p ($320\times 240$) for multi-camera setups.
+
+---
+
+## 3. Dataset Export & Downstream Training
+
+### Q4: HDF5 Export fails with `ModuleNotFoundError: No module named 'h5py'`
+* **Symptom:** Exporter falls back to compressed `.npz` files instead of native `.hdf5`.
+* **Resolution:**
+  ```bash
+  pip install h5py
+  jarvis-piper export --format aloha
+  ```
+
+---
+
+## 4. Policy Inference & Safety Interlocks
+
+### Q5: Policy commands rejected with `Cartesian workspace violation`
+* **Symptom:** `SafetySupervisor.filter_and_validate_action()` returns `is_safe = False`.
+* **Root Cause:** Neural network policy output predicted a waypoint outside the defined manipulation bounding box:
+  * $x \in [0.10, 0.60]\text{ m}$
+  * $y \in [-0.45, 0.45]\text{ m}$
+  * $z \in [0.015, 0.55]\text{ m}$
+* **Resolution:** Inspect policy normalization parameters (`obs_mean`, `obs_std`) in `models/checkpoints/imitation/bc_piper_policy.pt`. Ensure training data was clipped to the physical table bounds.

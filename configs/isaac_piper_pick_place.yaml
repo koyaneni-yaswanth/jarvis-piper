@@ -1,0 +1,37 @@
+# NVIDIA Isaac Lab / Isaac Sim Task Configuration: AgileX PiPER 6-DOF Pick-and-Place
+env:
+  num_envs: 64
+  env_spacing: 2.0
+  episode_length_s: 15.0
+  control_frequency_hz: 50.0
+  physics_frequency_hz: 200.0
+
+robot:
+  usd_path: "models/usd/piper.usda"
+  urdf_path: "ros2_ws/src/jarvis_piper_bringup/urdf/piper.urdf"
+  default_joint_positions: [0.0, 0.5, -0.5, 0.0, 0.0, 0.0, 0.035, 0.035]
+  actuator_gains:
+    stiffness: 400.0
+    damping: 40.0
+  action_scale: 0.05
+
+objects:
+  target_object:
+    type: "cube"
+    size: [0.04, 0.04, 0.04]
+    mass: 0.050
+    spawn_box:
+      x: [0.30, 0.45]
+      y: [-0.15, 0.05]
+      z: [0.02, 0.02]
+  destination_tray:
+    type: "tray"
+    size: [0.15, 0.15, 0.03]
+    position: [0.35, 0.25, 0.015]
+
+rewards:
+  reach_object_weight: -1.0
+  grasp_bonus: 20.0
+  lift_bonus: 30.0
+  reach_destination_weight: -1.0
+  place_bonus: 100.0

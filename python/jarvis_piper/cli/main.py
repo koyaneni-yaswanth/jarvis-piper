@@ -12,6 +12,10 @@ import sys
 import time
 from datetime import datetime
 
+_pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _pkg_root not in sys.path:
+    sys.path.insert(0, _pkg_root)
+
 from jarvis_piper.discovery.system_inventory import inspect_full_system, write_inventory_doc
 from jarvis_piper.hardware.mock_adapter import MockPiperAdapter, MockCameraAdapter, MockGripperAdapter
 
@@ -180,7 +184,9 @@ def cmd_validate(args):
 
 def cmd_export(args):
     from dataset.exporters import UniversalExporter
-    exporter = UniversalExporter(args.input_dir, args.output_dir)
+    raw_dir = getattr(args, "raw_dir", None) or getattr(args, "input_dir", "dataset/raw")
+    export_dir = getattr(args, "export_dir", None) or getattr(args, "output_dir", "dataset/exports")
+    exporter = UniversalExporter(raw_dir, export_dir)
     res = exporter.export_all(args.format)
     print("=" * 80)
     print("                 UNIVERSAL DATASET EXPORT COMPLETE")
@@ -340,8 +346,8 @@ def main():
 
     # export
     p_exp = subparsers.add_parser("export", help="Export dataset into LeRobot/HDF5/RLDS formats")
-    p_exp.add_argument("--input-dir", default="dataset/raw", help="Raw dataset directory")
-    p_exp.add_argument("--output-dir", default="dataset/exports", help="Export root directory")
+    p_exp.add_argument("--input-dir", "--raw-dir", dest="raw_dir", default="dataset/raw", help="Raw dataset directory")
+    p_exp.add_argument("--output-dir", "--export-dir", dest="export_dir", default="dataset/exports", help="Export root directory")
     p_exp.add_argument("--format", default="all", choices=["all", "lerobot", "aloha", "rlds", "world_model"], help="Export format")
 
     # version

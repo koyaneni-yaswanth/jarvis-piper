@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="piper">
+  <link name="world"/>
+  <joint name="world_to_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.004736 0.000026 0.041452" rpy="0 0 0"/>
+      <mass value="1.020"/>
+      <inertia ixx="0.002674" ixy="-0.000001" ixz="-0.000174" iyy="0.002826" iyz="0.000000" izz="0.000896"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.065" length="0.08"/>
+      </geometry>
+      <material name="piper_dark">
+        <color rgba="0.2 0.2 0.22 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.065" length="0.08"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.088" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.618" upper="2.618" effort="100.0" velocity="5.0"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="link1">
+    <inertial>
+      <origin xyz="0.00012 0.00010 -0.00439" rpy="0 0 0"/>
+      <mass value="0.710"/>
+      <inertia ixx="0.000489" ixy="0.0" ixz="0.0" iyy="0.000405" iyz="0.0" izz="0.000440"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.07"/>
+      </geometry>
+      <material name="piper_silver">
+        <color rgba="0.8 0.82 0.85 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.07"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.070" rpy="1.570796 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="3.14159" effort="100.0" velocity="5.0"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="link2">
+    <inertial>
+      <origin xyz="0.130 0.0 0.02" rpy="0 0 0"/>
+      <mass value="1.250"/>
+      <inertia ixx="0.00185" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0131"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.130 0 0" rpy="0 1.570796 0"/>
+      <geometry>
+        <capsule radius="0.04" length="0.260"/>
+      </geometry>
+      <material name="piper_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.130 0 0" rpy="0 1.570796 0"/>
+      <geometry>
+        <capsule radius="0.04" length="0.260"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0.260 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.967" upper="0.0" effort="100.0" velocity="5.0"/>
+    <dynamics damping="0.5" friction="0.1"/>
+  </joint>
+
+  <link name="link3">
+    <inertial>
+      <origin xyz="0.125 0.0 0.0" rpy="0 0 0"/>
+      <mass value="0.850"/>
+      <inertia ixx="0.0011" ixy="0.0" ixz="0.0" iyy="0.0082" iyz="0.0" izz="0.0086"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 1.570796 0"/>
+      <geometry>
+        <capsule radius="0.035" length="0.250"/>
+      </geometry>
+      <material name="piper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0.125 0 0" rpy="0 1.570796 0"/>
+      <geometry>
+        <capsule radius="0.035" length="0.250"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0.250 0 0" rpy="-1.570796 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.745" upper="1.745" effort="100.0" velocity="5.0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <link name="link4">
+    <inertial>
+      <origin xyz="0 0 0.03" rpy="0 0 0"/>
+      <mass value="0.450"/>
+      <inertia ixx="0.00035" ixy="0.0" ixz="0.0" iyy="0.00035" iyz="0.0" izz="0.00028"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.03" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.06"/>
+      </geometry>
+      <material name="piper_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.03" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.06"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint5" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0 0 0.060" rpy="1.570796 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.220" upper="1.220" effort="100.0" velocity="5.0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <link name="link5">
+    <inertial>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <mass value="0.380"/>
+      <inertia ixx="0.00024" ixy="0.0" ixz="0.0" iyy="0.00024" iyz="0.0" izz="0.00018"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.03" length="0.05"/>
+      </geometry>
+      <material name="piper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.03" length="0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint6" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0 0 0.050" rpy="-1.570796 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.0944" upper="2.0944" effort="100.0" velocity="3.0"/>
+    <dynamics damping="0.2" friction="0.05"/>
+  </joint>
+
+  <link name="link6">
+    <inertial>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <mass value="0.220"/>
+      <inertia ixx="0.00011" ixy="0.0" ixz="0.0" iyy="0.00011" iyz="0.0" izz="0.00009"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.028" length="0.03"/>
+      </geometry>
+      <material name="piper_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.028" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint6_to_gripper_base" type="fixed">
+    <parent link="link6"/>
+    <child link="gripper_base"/>
+    <origin xyz="0 0 0.030" rpy="0 0 0"/>
+  </joint>
+
+  <link name="gripper_base">
+    <inertial>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <mass value="0.320"/>
+      <inertia ixx="0.0002" ixy="0.0" ixz="0.0" iyy="0.0002" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.050 0.070 0.050"/>
+      </geometry>
+      <material name="piper_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.050 0.070 0.050"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="tcp_link"/>
+  <joint name="gripper_base_to_tcp" type="fixed">
+    <parent link="gripper_base"/>
+    <child link="tcp_link"/>
+    <origin xyz="0 0 0.090" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wrist_camera_link"/>
+  <joint name="gripper_to_camera" type="fixed">
+    <parent link="gripper_base"/>
+    <child link="wrist_camera_link"/>
+    <origin xyz="0.035 0 0.045" rpy="0 -0.2618 0"/>
+  </joint>
+
+  <joint name="joint7" type="prismatic">
+    <parent link="gripper_base"/>
+    <child link="link7"/>
+    <origin xyz="0 0.015 0.050" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.0" upper="0.035" effort="10.0" velocity="1.0"/>
+    <dynamics damping="0.1" friction="0.02"/>
+  </joint>
+
+  <link name="link7">
+    <inertial>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <mass value="0.045"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.000005"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.015 0.008 0.040"/>
+      </geometry>
+      <material name="piper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.015 0.008 0.040"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint8" type="prismatic">
+    <parent link="gripper_base"/>
+    <child link="link8"/>
+    <origin xyz="0 -0.015 0.050" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0.0" upper="0.035" effort="10.0" velocity="1.0"/>
+    <dynamics damping="0.1" friction="0.02"/>
+  </joint>
+
+  <link name="link8">
+    <inertial>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <mass value="0.045"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.000005"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.015 0.008 0.040"/>
+      </geometry>
+      <material name="piper_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.015 0.008 0.040"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="ranger_mini_mount"/>
+  <joint name="ranger_mount_to_arm" type="fixed">
+    <parent link="ranger_mini_mount"/>
+    <child link="world"/>
+    <origin xyz="0.180 0 0.250" rpy="0 0 0"/>
+  </joint>
+</robot>

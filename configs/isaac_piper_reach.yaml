@@ -1,0 +1,31 @@
+# NVIDIA Isaac Lab / Isaac Sim Task Configuration: AgileX PiPER 6-DOF Target Reaching
+env:
+  num_envs: 128
+  env_spacing: 1.5
+  episode_length_s: 10.0
+  control_frequency_hz: 50.0
+  physics_frequency_hz: 200.0
+
+robot:
+  usd_path: "models/usd/piper.usda"
+  urdf_path: "ros2_ws/src/jarvis_piper_bringup/urdf/piper.urdf"
+  root_prim: "/World/Piper"
+  default_joint_positions: [0.0, 0.5, -0.5, 0.0, 0.0, 0.0, 0.035, 0.035]
+  actuator_gains:
+    stiffness: 400.0
+    damping: 40.0
+  action_scale: 0.05
+
+task:
+  target_workspace:
+    x: [0.20, 0.50]
+    y: [-0.30, 0.30]
+    z: [0.10, 0.40]
+  rewards:
+    distance_weight: -2.0
+    reach_bonus: 50.0
+    action_penalty: -0.01
+    joint_velocity_penalty: -0.005
+  termination:
+    distance_threshold: 0.02
+    timeout_steps: 500

@@ -30,6 +30,9 @@ dataset/processed/*
 !dataset/processed/.gitkeep
 dataset/exports/*
 !dataset/exports/.gitkeep
+dataset/test_demo/
+dataset/test_exported/
+dataset/public/
 *.bag
 *.db3
 *.mcap
