@@ -35,6 +35,12 @@ def main():
     p_val = subparsers.add_parser("validate", help="Validate recorded episode dataset")
     p_val.add_argument("--dataset", type=str, default="data/raw/episode_mock_001", help="Path to episode or dataset")
 
+    # teleop
+    p_tel = subparsers.add_parser("teleop", help="Supervised teleoperation loop")
+    p_tel.add_argument("--dry-run", action="store_true", default=True, help="Run without physical arm motion")
+    p_tel.add_argument("--execute", action="store_true", help="Enable hardware actuation (requires ENABLE MOTION)")
+    p_tel.add_argument("--steps", type=int, default=30, help="Number of teleoperation steps to run")
+
     # record
     p_rec = subparsers.add_parser("record", help="Record a demonstration episode (mock/real)")
     p_rec.add_argument("--steps", type=int, default=30, help="Number of timesteps to record")
@@ -71,12 +77,50 @@ def main():
         print(f"  Warnings: {res['warnings']}")
         sys.exit(0 if res["valid"] else 1)
 
+    elif args.command == "teleop":
+        from jarvis.teleop import TeleoperationMapper
+        dry_run = not args.execute
+        print(f"Starting teleoperation loop (dry_run={dry_run})...")
+        teleop = MockTeleop()
+        arm = MockArm()
+        arm.connect()
+        safety = SafetySupervisor()
+        mapper = TeleoperationMapper()
+
+        if not dry_run:
+            token = input("Enter motion authorization token ('ENABLE MOTION'): ").strip()
+            safety.authorize_motion(token)
+
+        teleop.connect()
+        pos, quat = teleop.get_pose()
+        teleop.clutch = True
+        mapper.on_clutch_engaged(pos, [0.25, 0.0, 0.20])
+
+        for step in range(args.steps):
+            pos, quat = teleop.get_pose()
+            target = mapper.map_hand_to_robot(pos)
+            if target is not None:
+                q_cmd = [0.0, 0.5, -0.6, 0.0, 0.1, 0.0]
+                current_q = arm.get_joint_state()["positions"]
+                safe_q = safety.validate_and_filter(
+                    command_q=q_cmd,
+                    current_q=current_q,
+                    clutch_engaged=teleop.is_clutch_engaged(),
+                    tracking_age_sec=teleop.get_tracking_age(),
+                    ee_pos=target,
+                    is_hardware_target=(not dry_run),
+                )
+                if not dry_run:
+                    arm.command_joint_positions(safe_q)
+        print(f"[OK] Teleoperation loop completed successfully ({args.steps} steps).")
+        sys.exit(0)
+
     elif args.command == "record":
         rec = EpisodeRecorder(output_dir=args.output_dir)
         ep_id = "episode_mock_001"
         rec.start_episode(ep_id, {"task": "pick_and_place", "operator": "mock_tester"})
         for i in range(args.steps):
-            q = [0.1 * i / args.steps] * 6
+            q = [0.0, 0.5, -0.6 + 0.005 * (i / max(1, args.steps)), 0.0, 0.1, 0.0]
             rec.record_step(joint_positions=q, joint_velocities=[0.0]*6, action=q, gripper_stroke=0.035)
         meta = rec.stop_episode(outcome="success")
         print(f"[OK] Recorded episode {ep_id} ({meta['num_steps']} steps) in {rec.episode_dir}")
@@ -97,7 +141,9 @@ def main():
         policy = BCPolicy()
 
         dry_run = not args.execute
-        token = "ENABLE MOTION" if args.execute else None
+        token = None
+        if not dry_run:
+            token = input("Enter motion authorization token ('ENABLE MOTION'): ").strip()
 
         runner = SupervisedPolicyRunner(policy, arm, gripper, safety)
         res = runner.execute_rollout(max_steps=args.steps, dry_run=dry_run, motion_token=token)

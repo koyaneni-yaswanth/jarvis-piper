@@ -58,6 +58,8 @@ models/exported/*
 # Logs & experiments
 experiments/logs/
 experiments/results/
+logs/
+data/
 *.log
 .pytest_cache/
 .coverage
