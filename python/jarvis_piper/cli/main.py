@@ -73,100 +73,38 @@ def cmd_doctor(args):
 
 
 def cmd_demo(args):
-    """Generates synthetic demonstration episodes for GitHub users without physical hardware."""
+    """Generates synthetic demonstration episodes for GitHub users across manipulation themes."""
     num_episodes = args.episodes
     steps_per_ep = args.steps
     output_dir = args.output_dir
-    os.makedirs(output_dir, exist_ok=True)
+    theme_choice = getattr(args, "theme", "pick_and_place")
+
+    from jarvis_piper.tasks.theme_generator import ThematicDatasetGenerator, ManipulationTheme
+    generator = ThematicDatasetGenerator(output_root=output_dir)
+
+    if theme_choice == "all":
+        generator.generate_starter_curriculum(episodes_per_theme=num_episodes)
+        return 0
+
+    try:
+        selected_theme = ManipulationTheme(theme_choice)
+    except ValueError:
+        selected_theme = ManipulationTheme.PICK_AND_PLACE
 
     print("=" * 80)
-    print(f"       GENERATING {num_episodes} MOCK MULTI-MODAL DEMONSTRATION EPISODES")
+    print(f"       GENERATING {num_episodes} EPISODES | THEME: {selected_theme.value.upper()}")
     print(f"  Target Directory: {output_dir}")
     print("=" * 80)
 
     for i in range(num_episodes):
-        ep_id = f"ep_demo_{i+1:03d}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        ep_dir = os.path.join(output_dir, ep_id)
-        os.makedirs(os.path.join(ep_dir, "videos"), exist_ok=True)
-        os.makedirs(os.path.join(ep_dir, "images", "wrist"), exist_ok=True)
-        os.makedirs(os.path.join(ep_dir, "images", "depth"), exist_ok=True)
-
-        robot = MockPiperAdapter()
-        cam = MockCameraAdapter(width=320, height=240)
-        grip = MockGripperAdapter()
-
-        timesteps = []
-        journal_lines = []
-
-        import cv2
-        wrist_video_path = os.path.join(ep_dir, "videos", "wrist.mp4")
-        writer = cv2.VideoWriter(wrist_video_path, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (320, 240))
-
-        start_t = time.time()
-        for step in range(steps_per_ep):
-            sim_t = step * 0.0333
-            q, v, eff = robot.get_joint_states()
-            pos, quat = robot.get_tcp_pose()
-            stroke = grip.get_stroke()
-            rgb = cam.get_rgb_frame()
-            depth = cam.get_depth_frame()
-
-            if rgb is not None:
-                writer.write(rgb)
-                if step % 15 == 0:
-                    cv2.imwrite(os.path.join(ep_dir, "images", "wrist", f"frame_{step:06d}.jpg"), rgb)
-
-            if depth is not None and step % 15 == 0:
-                cv2.imwrite(os.path.join(ep_dir, "images", "depth", f"depth_{step:06d}.png"), depth)
-
-            step_dict = {
-                "step_index": step,
-                "timestamp": round(sim_t, 4),
-                "joint_positions": [round(x, 4) for x in q],
-                "joint_velocities": [round(x, 4) for x in v],
-                "joint_efforts": [round(x, 4) for x in eff],
-                "gripper_stroke": round(stroke, 4),
-                "tcp_pose": {
-                    "position": [round(x, 4) for x in pos],
-                    "orientation": [round(x, 4) for x in quat],
-                },
-                "action": [round(x, 4) for x in q],
-            }
-            timesteps.append(step_dict)
-            journal_lines.append(json.dumps(step_dict))
-
-        writer.release()
-
-        # Write stream_journal.jsonl
-        with open(os.path.join(ep_dir, "stream_journal.jsonl"), "w", encoding="utf-8") as f:
-            f.write("\n".join(journal_lines) + "\n")
-
-        metadata = {
-            "episode_id": ep_id,
-            "task_instruction": "Pick up the red cube and place in tray",
-            "task_category": "pick_and_place",
-            "operator_id": "demo_mock_generator",
-            "source_label": "SYNTHETIC",
-            "robot_platform": "PiPER_6DOF",
-            "success_label": True,
-            "duration_sec": round(steps_per_ep * 0.0333, 2),
-            "total_steps": steps_per_ep,
-            "target_fps": 30.0,
-            "start_timestamp": datetime.now().isoformat(),
-            "end_timestamp": datetime.now().isoformat(),
-            "schema_version": "2.0.0",
-        }
-
-        with open(os.path.join(ep_dir, "metadata.json"), "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
-
-        with open(os.path.join(ep_dir, "trajectory.json"), "w", encoding="utf-8") as f:
-            json.dump({"metadata": metadata, "timesteps": timesteps}, f, indent=2)
-
-        print(f"  [OK] Generated {ep_id:32} ({steps_per_ep} frames, {metadata['duration_sec']}s)")
+        generator.generate_episode(
+            theme=selected_theme,
+            episode_index=i + 1,
+            total_steps=steps_per_ep,
+        )
 
     print("=" * 80)
-    print("Mock Demo Generation Complete.")
+    print("Thematic Demonstration Generation Complete.")
     return 0
 
 
@@ -305,6 +243,7 @@ def main():
     p_demo = subparsers.add_parser("demo", help="Generate synthetic multi-modal demo dataset")
     p_demo.add_argument("--episodes", type=int, default=2, help="Number of episodes")
     p_demo.add_argument("--steps", type=int, default=60, help="Steps per episode")
+    p_demo.add_argument("--theme", default="pick_and_place", choices=["all", "pick_and_place", "visual_prediction", "failure_recovery"], help="Manipulation learning theme")
     p_demo.add_argument("--output-dir", default="dataset/raw", help="Output directory")
 
     # record

@@ -33,6 +33,7 @@ dataset/exports/*
 dataset/test_demo/
 dataset/test_exported/
 dataset/public/
+workspace_data_collection*/
 *.bag
 *.db3
 *.mcap

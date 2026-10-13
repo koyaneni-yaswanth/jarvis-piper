@@ -6,7 +6,7 @@ Generated on: recvnit
 - **Operating System**: Windows (10)
 - **Architecture**: AMD64
 - **Python Version**: 3.11.9
-- **Available Disk Space**: 174.33 GB
+- **Available Disk Space**: 181.27 GB
 
 ## 2. ROS 2 Environment
 - **ROS_DISTRO**: Not Sourced
