@@ -1,0 +1,16 @@
+seed,policy_name,task_success,grasp_success,placement_accuracy_m,episode_steps,latency_ms
+201,Scripted_Baseline,True,True,0.0,125,15.02
+201,Behavior_Cloning,False,False,0.285,100,2.0
+201,Action_Chunking_Transformer,False,False,0.24,100,1.0
+202,Scripted_Baseline,True,True,0.0,125,14.004
+202,Behavior_Cloning,False,False,0.285,100,0.0
+202,Action_Chunking_Transformer,False,False,0.24,100,0.0
+203,Scripted_Baseline,True,True,0.0001,125,31.567
+203,Behavior_Cloning,False,False,0.285,100,1.0
+203,Action_Chunking_Transformer,False,False,0.24,100,0.0
+204,Scripted_Baseline,True,True,0.0,125,12.508
+204,Behavior_Cloning,False,False,0.285,100,0.999
+204,Action_Chunking_Transformer,False,False,0.24,100,0.0
+205,Scripted_Baseline,True,True,0.0001,125,15.507
+205,Behavior_Cloning,False,False,0.285,100,1.0
+205,Action_Chunking_Transformer,False,False,0.24,100,0.0

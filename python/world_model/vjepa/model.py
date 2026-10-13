@@ -157,7 +157,7 @@ if HAS_TORCH:
             self,
             context_repr: torch.Tensor,
             context_indices: torch.Tensor,
-            target_indices: torch.Tensor,
+            target_indices: Optional[torch.Tensor] = None,
             robot_state: Optional[torch.Tensor] = None,
         ) -> torch.Tensor:
             """
@@ -177,6 +177,8 @@ if HAS_TORCH:
             ctx = ctx + ctx_pos
 
             # Target queries: mask_token + target pos_embed
+            if target_indices is None:
+                target_indices = context_indices
             if target_indices.dim() == 1:
                 target_indices = target_indices.unsqueeze(0).expand(B, -1)
             K_tgt = target_indices.size(1)
@@ -190,7 +192,17 @@ if HAS_TORCH:
             # Robot state token if available
             tokens_list = [ctx, tgt]
             if self.robot_state_proj is not None and robot_state is not None:
-                # Pool or take mean across clip
+                # Ensure 3D (B, seq, dim)
+                if robot_state.dim() == 2:
+                    robot_state = robot_state.unsqueeze(1)
+                # Pad or slice to match robot_state_proj in_features
+                in_f = self.robot_state_proj.in_features
+                if robot_state.size(-1) < in_f:
+                    pad = torch.zeros(*robot_state.shape[:-1], in_f - robot_state.size(-1), device=robot_state.device, dtype=robot_state.dtype)
+                    robot_state = torch.cat([robot_state, pad], dim=-1)
+                elif robot_state.size(-1) > in_f:
+                    robot_state = robot_state[..., :in_f]
+                # Pool across clip sequence
                 r_token = self.robot_state_proj(robot_state).mean(dim=1, keepdim=True)
                 tokens_list.insert(0, r_token)
 
