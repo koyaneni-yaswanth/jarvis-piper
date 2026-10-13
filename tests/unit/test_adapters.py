@@ -84,3 +84,30 @@ def test_mock_pika_sense_adapter():
     assert isinstance(btn, bool)
 
     adapter.disconnect()
+
+
+def test_official_pika_sense_adapter():
+    from sensor_adapters.pika.pika_adapter import PikaSenseAdapter, PikaGripperLedStatus
+
+    pika = PikaSenseAdapter(mode="simulation")
+    assert pika.TOPIC_POSE_SINGLE == "/pika_pose"
+    assert pika.TOPIC_GRIPPER_DATA == "/gripper_l/data"
+    assert pika.is_clutch_engaged() is False
+
+    # Check LED status
+    assert pika.get_led_indicator() == PikaGripperLedStatus.STANDBY
+
+    # Engage clutch and move
+    pika.set_mock_pose([0.45, -0.08, 0.32], [0, 0, 0, 1], clutch=True)
+    assert pika.is_clutch_engaged() is True
+
+    # Move hand by delta [+0.05, -0.02, +0.01]
+    pika.tracker_pose[:3] = [0.50, -0.10, 0.33]
+    disp = pika.get_relative_displacement()
+    assert np.allclose(disp, [0.05, -0.02, 0.01], atol=1e-4)
+
+    # Disengage clutch
+    pika.disengage_clutch()
+    assert pika.is_clutch_engaged() is False
+    assert np.allclose(pika.get_relative_displacement(), [0.0, 0.0, 0.0])
+
