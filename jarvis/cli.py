@@ -13,6 +13,7 @@ Subcommands:
 import sys
 import argparse
 from jarvis.doctor import JarvisDoctor
+from jarvis.config_validator import ConfigValidator
 from jarvis.hardware import MockArm, MockGripper, MockTeleop
 from jarvis.safety import SafetySupervisor
 from jarvis.record import EpisodeRecorder, EpisodeValidator
@@ -30,6 +31,10 @@ def main():
     # doctor
     p_doc = subparsers.add_parser("doctor", help="Run system and hardware diagnostic check")
     p_doc.add_argument("--bundle", action="store_true", help="Generate diagnostic bundle archive")
+
+    # validate-config
+    p_cfg = subparsers.add_parser("validate-config", help="Validate config.yaml schema and safety limits")
+    p_cfg.add_argument("--config", type=str, default="config.yaml", help="Path to config.yaml")
 
     # validate
     p_val = subparsers.add_parser("validate", help="Validate recorded episode dataset")
@@ -67,6 +72,22 @@ def main():
             sys.exit(0)
         ok = doc.print_report()
         sys.exit(0 if ok else 1)
+
+    elif args.command == "validate-config":
+        report = ConfigValidator.validate_file(args.config)
+        print(f"\nConfiguration Validation Report ({args.config}):")
+        print(f"  Valid   : {report['valid']}")
+        if report["errors"]:
+            print("  Errors  :")
+            for err in report["errors"]:
+                print(f"    - [FAIL] {err}")
+        if report["warnings"]:
+            print("  Warnings:")
+            for warn in report["warnings"]:
+                print(f"    - [WARN] {warn}")
+        if report["valid"] and not report["warnings"]:
+            print("  Status  : ALL PARAMETERS COMPLIANT WITH SAFETY CONSTITUTION")
+        sys.exit(0 if report["valid"] else 1)
 
     elif args.command == "validate":
         val = EpisodeValidator()

@@ -65,11 +65,27 @@ data/
 .coverage
 htmlcov/
 
-# Local configuration overrides (never commit machine-specific paths)
+# Local configuration & calibration (never commit machine-specific paths or calibration)
 configs/local.yaml
+configs/calibration.yaml
+calibration/
+*.calib
+*.calibration
+config.json
+
+# Secrets, tokens, and private environment files
+.env
+.env.*
+*.key
+*.pem
+*.token
+*secret*
+*credentials*
 
 # IDE & OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+push_err.txt
+push_out.txt

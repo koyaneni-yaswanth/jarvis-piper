@@ -44,7 +44,7 @@ def check_isaac_installation():
         os.path.expanduser("~/.local/share/ov/pkg/isaac-sim-4.2.0"),
         os.path.expanduser("~/.local/share/ov/pkg/isaac-sim-4.1.0"),
         os.path.expanduser("~/.local/share/ov/pkg/isaac-sim-4.0.0"),
-        "C:\\Users\\recvn\\AppData\\Local\\ov\\pkg\\isaac-sim-4.2.0",
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "ov", "pkg", "isaac-sim-4.2.0") if os.environ.get("LOCALAPPDATA") else "",
         "/isaac-sim",
     ]
     found_path = None

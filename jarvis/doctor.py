@@ -21,6 +21,10 @@ import time
 from typing import Dict, Any, List, Tuple
 
 
+from jarvis.config_validator import ConfigValidator
+from jarvis.pika_discovery import PikaDiscovery
+
+
 class JarvisDoctor:
     """
     Non-destructive system and hardware diagnostic inspector.
@@ -56,11 +60,15 @@ class JarvisDoctor:
     def _check_python(self) -> Dict[str, Any]:
         ver = sys.version_info
         ver_str = f"{ver.major}.{ver.minor}.{ver.micro}"
-        ok = (ver.major == 3 and ver.minor in [10, 11, 12])
+        is_conda = "conda" in sys.prefix.lower() or "miniconda" in sys.prefix.lower()
+        ok = (ver.major == 3 and ver.minor in [10, 11, 12]) and not is_conda
+        hint = "Python 3.10 or 3.11 is strongly recommended."
+        if is_conda:
+            hint = "Conda detected! Deactivate Conda ('conda deactivate') when launching ROS 2 Humble."
         return {
             "status": "PASS" if ok else "WARN",
-            "info": ver_str,
-            "hint": "Python 3.10 or 3.11 is strongly recommended.",
+            "info": f"{ver_str} {'(Conda)' if is_conda else '(System)'}",
+            "hint": hint,
         }
 
     def _check_gpu(self) -> Dict[str, Any]:
@@ -98,12 +106,18 @@ class JarvisDoctor:
             }
 
     def _check_pika_usb(self) -> Dict[str, Any]:
-        # Check for Valve receiver VID 0x28de
-        # Mock/dev check returns PASS with advisory note
+        report = PikaDiscovery.discover()
+        cal_val = report.calibration_status.value if hasattr(report.calibration_status, "value") else str(report.calibration_status)
+        if report.detected:
+            return {
+                "status": "PASS",
+                "info": f"SteamVR Dongle ({report.usb_vendor_id or '0x28de'}) detected | Calib: {cal_val}",
+                "hint": "Hardware tracking ready.",
+            }
         return {
             "status": "PASS",
-            "info": "PIKA Sense adapter loaded (Mock/Hardware ready)",
-            "hint": "Insert SteamVR USB receiver (VID 0x28de) for real optical tracking.",
+            "info": "PIKA Sense adapter loaded (Mock ready; Dongle unattached)",
+            "hint": "Insert SteamVR USB receiver (VID 0x28de) for real optical tracking on NUC.",
         }
 
     def _check_cameras(self) -> Dict[str, Any]:
@@ -114,9 +128,11 @@ class JarvisDoctor:
         }
 
     def _check_config(self) -> Dict[str, Any]:
-        if os.path.exists(self.config_path):
+        report = ConfigValidator.validate_file(self.config_path)
+        if report["valid"]:
             return {"status": "PASS", "info": f"Valid config: {self.config_path}", "hint": "Config schema OK."}
-        return {"status": "WARN", "info": "config.yaml not found", "hint": "Default configurations active."}
+        err_msg = "; ".join(report["errors"])
+        return {"status": "FAIL", "info": f"Config error: {err_msg}", "hint": "Correct invalid parameters in config.yaml."}
 
     def print_report(self) -> bool:
         """Prints formatted doctor table and returns True if no FAILs."""

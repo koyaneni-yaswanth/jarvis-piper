@@ -1,4 +1,19 @@
 """
+DEPRECATED — DO NOT USE IN NEW CODE.
+
+This module (`safety/safety_supervisor.py`) is a legacy artifact with an incompatible
+method signature. The canonical implementation is:
+
+    from jarvis_piper.safety.supervisor import SafetySupervisor
+
+Key API difference:
+  LEGACY:    validate_joint_command(target, current, dt) -> (is_safe, sanitized, reason)
+  CANONICAL: filter_and_validate_action(target_q, current_q, dt) -> (safe_q, stroke, is_safe, reason)
+
+This file is retained for reference only. All production code, ROS nodes, policies,
+and teleoperation controllers MUST use the canonical implementation.
+This file will be removed in the next cleanup commit once all references are migrated.
+
 Phase 7: Independent Safety Architecture for AgileX PiPER 6-DOF.
 Enforces multi-layer safety independent of any neural network or task planner:
 - Joint position soft-stop limits.

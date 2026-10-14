@@ -16,7 +16,7 @@ Isaac Sim requires NVIDIA Omniverse and Python 3.10 with specialized PyTorch/CUD
 > Run Isaac Sim inside its dedicated conda environment or official Docker container:
 > ```bash
 > docker run --name isaac-sim --entrypoint bash -it --gpus all \
->   -v "D:/yaswanth/ranger mini/jarvis-piper:/workspace/jarvis-piper" \
+>   -v "$(pwd):/workspace/jarvis-piper" \
 >   nvcr.io/nvidia/isaac-sim:4.2.0
 > ```
 

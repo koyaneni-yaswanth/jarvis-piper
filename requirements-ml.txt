@@ -1,0 +1,16 @@
+# JARVIS-PiPER: Machine Learning & Policy Training Dependencies (Phase 2 & Phase 8)
+# Designed for isolated virtual environments (venv) to prevent conflicting with ROS 2 Humble system Python.
+
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.22.0,<2.0.0
+scipy>=1.9.0
+pyyaml>=6.0
+h5py>=3.8.0
+tqdm>=4.65.0
+matplotlib>=3.7.0
+scikit-learn>=1.2.0
+
+# Optional Imitation Learning & Foundation Model Tools
+# lerobot>=0.1.0
+# einops>=0.6.0

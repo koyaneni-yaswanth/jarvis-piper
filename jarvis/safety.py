@@ -14,6 +14,7 @@ Enforces:
 8. Rejection of NaN, Inf, and sudden jumps.
 """
 
+from enum import Enum
 import time
 import math
 from typing import Dict, Any, List, Tuple, Optional
@@ -28,7 +29,20 @@ from jarvis.errors import (
     WorkspaceViolationError,
     WatchdogTimeoutError,
     TrackingLostError,
+    CalibrationStatusError,
+    InvalidJointStateError,
+    StaleFeedbackError,
 )
+from jarvis.pika_discovery import CalibrationStatus
+
+
+class ExecutionMode(str, Enum):
+    """JARVIS Operating Modes."""
+    MOCK = "MOCK"
+    SIMULATION = "SIMULATION"
+    REPLAY = "REPLAY"
+    TELEOP_DRY_RUN = "TELEOP_DRY_RUN"
+    HARDWARE_SUPERVISED = "HARDWARE_SUPERVISED"
 
 
 class SafetySupervisor:
@@ -60,19 +74,35 @@ class SafetySupervisor:
         max_step_delta: float = 0.10,  # rad per tick ceiling
         watchdog_timeout_sec: float = 0.10,  # 100 ms watchdog
         tracking_timeout_sec: float = 0.05,  # 50 ms tracking loss hold
+        feedback_timeout_sec: float = 0.10,  # 100 ms feedback staleness hold
+        milestone_lock: bool = False,       # When True, locks physical hardware motion for Milestone 2
     ):
         self.speed_scale = speed_scale
         self.max_velocity = max_velocity * speed_scale
         self.max_step_delta = max_step_delta
         self.watchdog_timeout_sec = watchdog_timeout_sec
         self.tracking_timeout_sec = tracking_timeout_sec
+        self.feedback_timeout_sec = feedback_timeout_sec
+        self.milestone_lock = milestone_lock
 
-        # State latches
+        # Mode and state latches (Always initializes to MOCK mode)
+        self.mode = ExecutionMode.MOCK
         self._estopped = False
         self._estop_reason = ""
         self._authorized_token: Optional[str] = None
         self._last_command_time = time.time()
         self._last_valid_positions: Optional[List[float]] = None
+
+    def set_mode(self, mode: ExecutionMode) -> None:
+        """Sets active execution mode. Escalating to HARDWARE_SUPERVISED does NOT authorize motion."""
+        self.mode = ExecutionMode(mode)
+
+    def get_mode(self) -> ExecutionMode:
+        return self.mode
+
+    def set_milestone_lock(self, locked: bool = True) -> None:
+        """Enforces milestone-level hardware actuation lock."""
+        self.milestone_lock = locked
 
     def authorize_motion(self, token: str) -> None:
         """Grants physical motion permission for the session if token is exact."""
@@ -109,19 +139,27 @@ class SafetySupervisor:
         current_q: List[float],
         clutch_engaged: bool = True,
         tracking_age_sec: float = 0.0,
+        feedback_age_sec: float = 0.0,
         ee_pos: Optional[List[float]] = None,
         is_hardware_target: bool = False,
+        calibration_status: CalibrationStatus = CalibrationStatus.CALIBRATED,
     ) -> List[float]:
         """
-        Passes a commanded joint configuration through the 10 safety filters.
+        Passes a commanded joint configuration through safety filters.
         Returns clamped, velocity-limited safe joint command.
         Raises specific JarvisError on safety violation.
         """
         now = time.time()
 
         # 1. Hardware Motion Gate
-        if is_hardware_target and not self.is_motion_authorized():
-            raise MotionNotAuthorizedError("Target is physical arm but session motion is not authorized.")
+        if is_hardware_target:
+            if self.milestone_lock:
+                raise MotionNotAuthorizedError(
+                    "Milestone 2 strictly prohibits physical hardware motion. "
+                    "All hardware actuation remains BLOCKED until Milestone 17 physical commissioning."
+                )
+            if not self.is_motion_authorized():
+                raise MotionNotAuthorizedError("Target is physical arm but session motion is not authorized.")
 
         # 2. Latched E-Stop check
         if self._estopped:
@@ -135,7 +173,18 @@ class SafetySupervisor:
         if tracking_age_sec > self.tracking_timeout_sec:
             raise TrackingLostError(tracking_age_sec)
 
-        # 5. Command watchdog check
+        # 5. Calibration status check
+        cal_val = calibration_status.value if hasattr(calibration_status, "value") else str(calibration_status)
+        if cal_val != CalibrationStatus.CALIBRATED.value:
+            raise CalibrationStatusError(
+                cal_val, "Teleoperation tracking requires verified CALIBRATED state."
+            )
+
+        # 6. Feedback staleness check
+        if feedback_age_sec > self.feedback_timeout_sec:
+            raise StaleFeedbackError(feedback_age_sec, self.feedback_timeout_sec)
+
+        # 7. Command watchdog check
         dt = now - self._last_command_time
         if dt > self.watchdog_timeout_sec and self._last_valid_positions is not None:
             # Stale command stream - hold current position
@@ -143,13 +192,13 @@ class SafetySupervisor:
             raise WatchdogTimeoutError(dt, self.watchdog_timeout_sec)
         self._last_command_time = now
 
-        # 6. NaN / Inf rejection
-        if any(math.isnan(x) or math.isinf(x) for x in command_q):
-            raise ValueError(f"Rejected NaN or Inf in commanded configuration: {command_q}")
+        # 8. NaN / Inf rejection
+        if any(math.isnan(x) or math.isinf(x) for x in command_q + current_q):
+            raise InvalidJointStateError(f"Rejected NaN or Inf in joint configuration: cmd={command_q}, cur={current_q}")
 
-        # 7. Joint count validation
+        # 9. Joint count validation
         if len(command_q) != 6 or len(current_q) != 6:
-            raise ValueError(f"Invalid joint count: expected 6, got {len(command_q)}")
+            raise InvalidJointStateError(f"Invalid joint count: expected 6, got cmd={len(command_q)}, cur={len(current_q)}")
 
         # 8. Cartesian workspace check (if forward kinematics provided)
         if ee_pos is not None:

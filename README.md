@@ -9,7 +9,7 @@
 [![PyTorch 2.x](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
 [![ROS 2 Ready](https://img.shields.io/badge/ROS_2-Lyrical%20%7C%20Humble%20%7C%20Jazzy-blue.svg)](https://docs.ros.org/)
 [![NVIDIA Isaac Sim](https://img.shields.io/badge/NVIDIA-Isaac_Sim_4.x_%7C_Isaac_Lab-76B900.svg)](https://developer.nvidia.com/isaac-sim)
-[![Tests Passing](https://img.shields.io/badge/Tests-56%20Passing-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-92%20Passing-brightgreen.svg)](tests/)
 [![Hardware Isolation](https://img.shields.io/badge/Hardware-Isolated%20(BLOCKED__HARDWARE)-orange.svg)](scripts/hardware_connection_test.py)
 
 **A production-grade, research-ready platform for multimodal teleoperation demonstration collection, LeRobot/ALOHA/RLDS dataset engineering, Isaac Sim simulation, 3-layer robot learning, and JARVIS natural-language autonomous manipulation on the AgileX PiPER 6-DOF robotic arm.**
@@ -164,40 +164,54 @@ Frame 6 (Flange):   origin [0.000,  0.045,  0.065]
 
 ---
 
-## 5. Quickstart in 5 Minutes
+## 5. Quickstart & Deployment
 
-### 1. Clone & Setup Workspace
+### A. Development & Offline Mode (Windows / macOS / Linux)
+
 ```bash
+# 1. Clone & Setup Workspace
 git clone https://github.com/koyaneni-yaswanth/jarvis-piper.git
 cd jarvis-piper
 python -m pip install -e .
-```
 
-### 2. Verify System & Hardware Isolation
-```bash
-python python/jarvis_piper/cli/main.py doctor
-```
-*Note: If CAN or SteamVR is not plugged in, the system reports `BLOCKED_HARDWARE` without crashing or falsely claiming success.*
+# 2. Run System & Hardware Doctor (Mock / Isolated)
+python -m jarvis.cli doctor
 
-### 3. Generate High-Quality Synthetic Demonstration Dataset
-```bash
-python python/jarvis_piper/cli/main.py demo --episodes 2 --steps 30 --output-dir dataset/test_demo
-```
+# 3. Validate Configuration Schema & Safety Limits
+python -m jarvis.cli validate-config
 
-### 4. Validate Quality & 7-Point Integrity Score
-```bash
-python python/jarvis_piper/cli/main.py validate --dataset dataset/test_demo
-```
-
-### 5. Export to LeRobot v2.0, ALOHA HDF5 & RLDS
-```bash
-python python/jarvis_piper/cli/main.py export --format all --raw-dir dataset/test_demo --export-dir dataset/test_exported
-```
-
-### 6. Run the Full Acceptance Test Suite
-```bash
-python scripts/test_readme_commands.py
+# 4. Run Full 92-Test Automated Acceptance Suite
 pytest tests/ -v
+```
+
+### B. Production Deployment to Physical NUC (Ubuntu 22.04 LTS / ROS 2 Humble)
+
+For physical hardware operations with the AgileX PiPER manipulator and PIKA teleoperation controllers, consult the dedicated deployment documentation:
+
+- 📖 **[NUC Deployment & Hardware Verification Guide](docs/NUC_DEPLOYMENT_GUIDE.md)**: Full runbook for Gates 1–6.
+- 📋 **[Deployment Readiness & Architecture Audit](docs/DEPLOYMENT_AUDIT.md)**: Hardware inventory, compatibility, and blocker register.
+- 🔧 **Hardware Runbooks**:
+  - [PiPER Arm Setup & 1 Mbps CAN](docs/hardware/PIPER_SETUP.md)
+  - [PiPER Passive Diagnostics](docs/hardware/PIPER_DIAGNOSTICS.md)
+  - [PIKA Sense & Base Stations Setup](docs/hardware/PIKA_SETUP.md)
+  - [PIKA Optical Calibration & Tracking](docs/hardware/PIKA_CALIBRATION.md)
+
+Quick NUC execution summary:
+```bash
+# 1. Preflight System & Hardware Audit
+./scripts/nuc_preflight.sh
+
+# 2. Execute NUC Test Suite (Strictly Isolated / Zero Motion)
+./scripts/run_nuc_tests.sh
+
+# 3. Run Passive Read-Only CAN Feedback Diagnostics
+./scripts/diagnose_piper.sh can0
+
+# 4. Run Passive Optical Tracking Diagnostics
+./scripts/diagnose_pika.sh
+
+# 5. Generate Signed Deployment Report
+./scripts/generate_deployment_report.sh
 ```
 
 ---

@@ -153,3 +153,49 @@ class PermissionDeniedError(JarvisError):
             fix=f"sudo usermod -aG {group} $USER  (then log out and back in)",
             manual_section="Section 3 (Install & User Groups)",
         )
+
+
+class CalibrationStatusError(JarvisError):
+    def __init__(self, status: str, details: str = ""):
+        super().__init__(
+            message=f"PIKA Calibration Status '{status}' does not permit teleoperation: {details}",
+            cause=f"Tracking space is uncalibrated, stale, or invalid (status: {status}).",
+            fix="Execute 'pika_locator/lib/survive-cli --force-calibrate' or run 'jarvis calibrate'.",
+            manual_section="Section 6 (PIKA-to-PiPER Calibration)",
+        )
+        self.status = status
+        self.details = details
+
+
+class InvalidJointStateError(JarvisError, ValueError):
+    def __init__(self, details: str):
+        super().__init__(
+            message=f"Invalid robot joint state received: {details}",
+            cause="Received joint positions contain NaN, infinite values, incorrect joint count, or out-of-range units.",
+            fix="Inspect sensor bus and encoder feedback packets; verify units are radians.",
+            manual_section="Section 13 (Hardware Facts & Specifications)",
+        )
+
+
+class StaleFeedbackError(JarvisError):
+    def __init__(self, age_sec: float, threshold_sec: float = 0.10):
+        super().__init__(
+            message=f"Robot feedback is STALE ({age_sec*1000:.1f} ms > {threshold_sec*1000:.1f} ms threshold).",
+            cause="Hardware feedback telemetry stream interrupted or dropped on the communication bus.",
+            fix="Verify CAN bus connection and arm power; ensure driver node is actively receiving packets.",
+            manual_section="Section 5 (Read-Only Hardware Verification)",
+        )
+        self.age_sec = age_sec
+        self.threshold_sec = threshold_sec
+        self.age = age_sec
+        self.timeout = threshold_sec
+
+
+class HardwareUnavailableError(JarvisError):
+    def __init__(self, device: str, details: str):
+        super().__init__(
+            message=f"Hardware '{device}' is UNAVAILABLE: {details}",
+            cause=f"Physical device '{device}' is not connected, bus interface is down, or driver is offline.",
+            fix="Connect physical hardware, bring up interface, or run in MOCK / SIMULATION mode.",
+            manual_section="Section 2 (What You Need) & Section 5",
+        )

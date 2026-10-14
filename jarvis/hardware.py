@@ -6,10 +6,19 @@ Provides complete Mock implementations (with injectable faults) and Real impleme
 
 from abc import ABC, abstractmethod
 import time
+import math
 from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
 
-from jarvis.errors import CanInterfaceDownError, DeviceNotFoundError, TrackingLostError
+from jarvis.errors import (
+    CanInterfaceDownError,
+    DeviceNotFoundError,
+    TrackingLostError,
+    HardwareUnavailableError,
+    InvalidJointStateError,
+    StaleFeedbackError,
+    MotionNotAuthorizedError,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -31,7 +40,22 @@ class ArmInterface(ABC):
 
     @abstractmethod
     def get_joint_state(self) -> Dict[str, Any]:
-        """Returns dict: {'positions': List[float], 'velocities': List[float], 'efforts': List[float], 'timestamp': float}"""
+        """Returns dict: {'positions': List[float], 'velocities': List[float], 'efforts': List[float], 'timestamp': float, 'freshness_sec': float, 'error_flags': List[str]}"""
+        pass
+
+    @abstractmethod
+    def get_feedback_freshness(self) -> float:
+        """Returns elapsed time in seconds since last received telemetry packet."""
+        pass
+
+    @abstractmethod
+    def get_communication_errors(self) -> List[str]:
+        """Returns active communication error strings."""
+        pass
+
+    @abstractmethod
+    def get_mode(self) -> str:
+        """Returns active operating mode (e.g. MOCK, HARDWARE)."""
         pass
 
     @abstractmethod
@@ -119,12 +143,16 @@ class MockArm(ArmInterface):
         # Fault injection hooks
         self.inject_disconnect = False
         self.inject_stale = False
+        self.inject_nan = False
+        self.inject_wrong_count = False
+        self.inject_comm_error = False
         self.inject_overtemp = False
 
     def connect(self) -> bool:
         if self.inject_disconnect:
             return False
         self.connected = True
+        self.last_cmd_time = time.time()
         return True
 
     def disconnect(self) -> None:
@@ -133,28 +161,60 @@ class MockArm(ArmInterface):
     def is_connected(self) -> bool:
         return self.connected and not self.inject_disconnect
 
+    def get_feedback_freshness(self) -> float:
+        if not self.is_connected():
+            return float("inf")
+        if self.inject_stale:
+            return 10.0
+        return max(0.0, time.time() - self.last_cmd_time)
+
+    def get_communication_errors(self) -> List[str]:
+        errors = []
+        if self.inject_comm_error:
+            errors.append("CAN_RX_FIFO_OVERFLOW")
+        if self.inject_disconnect or not self.connected:
+            errors.append("DEVICE_DISCONNECTED")
+        return errors
+
+    def get_mode(self) -> str:
+        return "MOCK"
+
     def get_joint_state(self) -> Dict[str, Any]:
         if not self.is_connected():
-            raise RuntimeError("Cannot query joint state: Arm is disconnected!")
+            raise HardwareUnavailableError("MockArm", "Cannot query joint state: Arm is disconnected!")
         t = (self.last_cmd_time - 10.0) if self.inject_stale else time.time()
-        flags = ["OVER_TEMP_WARNING"] if self.inject_overtemp else []
+        flags = list(self.error_flags)
+        if self.inject_overtemp:
+            flags.append("OVER_TEMP_WARNING")
+
+        if self.inject_nan:
+            positions = [float("nan")] * 6
+        elif self.inject_wrong_count:
+            positions = [0.0] * 5
+        else:
+            positions = list(self.q)
+
         return {
-            "positions": list(self.q),
+            "positions": positions,
             "velocities": list(self.v),
             "efforts": list(self.eff),
             "timestamp": t,
+            "freshness_sec": self.get_feedback_freshness(),
             "error_flags": flags,
         }
 
     def command_joint_positions(self, positions: List[float]) -> bool:
         if not self.is_connected():
-            raise RuntimeError("Cannot command arm: Arm is disconnected!")
+            raise HardwareUnavailableError("MockArm", "Cannot command arm: Arm is disconnected!")
         self.q = list(positions)
         self.last_cmd_time = time.time()
         return True
 
     def get_error_flags(self) -> List[str]:
-        return ["OVER_TEMP_WARNING"] if self.inject_overtemp else []
+        flags = list(self.error_flags)
+        if self.inject_overtemp:
+            flags.append("OVER_TEMP_WARNING")
+        return flags
 
 
 class MockGripper(GripperInterface):
@@ -252,6 +312,11 @@ class RealPiperArm(ArmInterface):
         self.bitrate = bitrate
         self.connected = False
         self.bus = None
+        self.last_packet_time = 0.0
+        self.last_positions = [0.0] * 6
+        self.last_velocities = [0.0] * 6
+        self.last_efforts = [0.0] * 6
+        self.comm_errors = []
 
     def connect(self) -> bool:
         try:
@@ -261,6 +326,7 @@ class RealPiperArm(ArmInterface):
             return True
         except Exception as e:
             self.connected = False
+            self.comm_errors.append(f"CAN connect failed: {e}")
             raise CanInterfaceDownError(self.can_interface) from e
 
     def disconnect(self) -> None:
@@ -269,31 +335,65 @@ class RealPiperArm(ArmInterface):
                 self.bus.shutdown()
             except Exception:
                 pass
+            self.bus = None
         self.connected = False
 
     def is_connected(self) -> bool:
-        return self.connected
+        return self.connected and self.bus is not None
+
+    def get_feedback_freshness(self) -> float:
+        if not self.is_connected() or self.last_packet_time == 0.0:
+            return float("inf")
+        return max(0.0, time.time() - self.last_packet_time)
+
+    def get_communication_errors(self) -> List[str]:
+        return list(self.comm_errors)
+
+    def get_mode(self) -> str:
+        return "HARDWARE" if self.is_connected() else "DISCONNECTED"
 
     def get_joint_state(self) -> Dict[str, Any]:
-        if not self.connected:
+        if not self.connected or not self.bus:
             raise CanInterfaceDownError(self.can_interface)
-        # Query feedback frames from CAN ID 0x2A1..0x2A6
+
+        # Passive non-blocking receive of available frames
+        try:
+            while True:
+                msg = self.bus.recv(timeout=0.005)
+                if msg is None:
+                    break
+                # Joint feedback CAN IDs 0x2A1..0x2A6
+                if 0x2A1 <= msg.arbitration_id <= 0x2A6:
+                    j_idx = msg.arbitration_id - 0x2A1
+                    if len(msg.data) >= 2:
+                        raw_deg = int.from_bytes(msg.data[0:2], byteorder="little", signed=True)
+                        rad = (raw_deg * 0.001) * (math.pi / 180.0)
+                        self.last_positions[j_idx] = float(rad)
+                        self.last_packet_time = time.time()
+        except Exception as e:
+            self.comm_errors.append(f"CAN read error: {e}")
+
+        freshness = self.get_feedback_freshness()
         return {
-            "positions": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            "velocities": [0.0] * 6,
-            "efforts": [0.0] * 6,
-            "timestamp": time.time(),
-            "error_flags": [],
+            "positions": list(self.last_positions),
+            "velocities": list(self.last_velocities),
+            "efforts": list(self.last_efforts),
+            "timestamp": self.last_packet_time,
+            "freshness_sec": freshness,
+            "error_flags": list(self.comm_errors),
         }
 
     def command_joint_positions(self, positions: List[float]) -> bool:
         if not self.connected:
             raise CanInterfaceDownError(self.can_interface)
-        # Transmit target to CAN ID 0x151..0x156
-        return True
+        # Milestone 2 strictly prohibits physical hardware motion
+        raise MotionNotAuthorizedError(
+            "Milestone 2 strictly prohibits physical hardware motion. "
+            "All physical hardware actuation remains BLOCKED until Milestone 17 physical commissioning."
+        )
 
     def get_error_flags(self) -> List[str]:
-        return []
+        return list(self.comm_errors)
 
 
 class RealPiperGripper(GripperInterface):
@@ -316,26 +416,42 @@ class RealPiperGripper(GripperInterface):
 
 
 class RealPikaSense(TeleopInterface):
-    def __init__(self):
+    def __init__(self, config_path: Optional[str] = None):
+        self.config_path = config_path
         self.connected = False
-        self.last_packet_time = time.time()
+        self.last_packet_time = 0.0
+        self.last_pose = ([0.45, -0.08, 0.32], [0.0, 0.0, 0.0, 1.0])
+        self.clutch_engaged = False
+        self.report = None
 
     def connect(self) -> bool:
-        # Check SteamVR receiver VID 0x28de
+        from jarvis.pika_discovery import PikaDiscovery
+        self.report = PikaDiscovery.discover(config_path=self.config_path)
+        if not self.report.detected:
+            self.connected = False
+            raise DeviceNotFoundError("SteamVR Wireless Receiver", "VID 0x28de, PID 0x2101")
         self.connected = True
+        self.last_packet_time = time.time()
         return True
 
     def disconnect(self) -> None:
         self.connected = False
 
+    def is_connected(self) -> bool:
+        return self.connected
+
     def get_pose(self) -> Tuple[List[float], List[float]]:
-        return ([0.45, -0.08, 0.32], [0.0, 0.0, 0.0, 1.0])
+        if not self.connected:
+            raise DeviceNotFoundError("SteamVR Wireless Receiver", "VID 0x28de")
+        return list(self.last_pose[0]), list(self.last_pose[1])
 
     def is_clutch_engaged(self) -> bool:
-        return False
+        return bool(self.clutch_engaged)
 
     def get_tracking_age(self) -> float:
-        return time.time() - self.last_packet_time
+        if not self.connected or self.last_packet_time == 0.0:
+            return float("inf")
+        return max(0.0, time.time() - self.last_packet_time)
 
 
 class RealCamera(CameraInterface):
