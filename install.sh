@@ -30,9 +30,12 @@ else
     exit 1
 fi
 
-echo "Installing package in editable development mode..."
-python3 -m pip install --upgrade pip
-python3 -m pip install -e .
+echo "Installing package in editable development mode (non-destructive)..."
+if [ -n "$VIRTUAL_ENV" ]; then
+    python3 -m pip install -e .
+else
+    python3 -m pip install --user -e .
+fi
 
 # 3. Optional System-Level Configuration
 if [ "$1" == "--system" ]; then

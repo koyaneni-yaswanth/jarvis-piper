@@ -39,8 +39,8 @@ def cmd_doctor(args):
     checks.append(("Python Environment", info["python"], "PASS"))
     # 3. ROS 2 Distro
     distro = info["ros_distro"]
-    if distro.lower() == "lyrical":
-        checks.append(("ROS 2 Distro", "lyrical", "PASS"))
+    if distro.lower() in ["humble", "lyrical"]:
+        checks.append(("ROS 2 Distro", distro, "PASS"))
     elif distro != "Not Sourced":
         checks.append(("ROS 2 Distro", distro, "WARNING"))
     else:

@@ -43,7 +43,10 @@ def inspect_full_system() -> Dict[str, Any]:
     return info
 
 
-def write_inventory_doc(output_path: str = "docs/system_inventory.md"):
+def write_inventory_doc(output_path: str = "docs/system_inventory.md", overwrite: bool = False):
+    if not overwrite and os.path.exists(output_path):
+        return inspect_full_system()
+
     data = inspect_full_system()
     content = f"""# System Inventory: JARVIS-PiPER
 

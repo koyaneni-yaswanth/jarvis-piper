@@ -38,10 +38,12 @@ ml = [
 ]
 
 [project.scripts]
+jarvis = "jarvis.cli:main"
 jarvis-piper = "jarvis_piper.cli.main:main"
 
 [tool.setuptools.packages.find]
-where = ["python"]
+where = [".", "python"]
+include = ["jarvis*", "jarvis_piper*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
