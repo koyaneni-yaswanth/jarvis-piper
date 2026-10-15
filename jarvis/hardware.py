@@ -321,7 +321,7 @@ class RealPiperArm(ArmInterface):
     def connect(self) -> bool:
         try:
             import can
-            self.bus = can.interface.Bus(channel=self.can_interface, bustype="socketcan", bitrate=self.bitrate)
+            self.bus = can.interface.Bus(channel=self.can_interface, interface="socketcan", bitrate=self.bitrate)
             self.connected = True
             return True
         except Exception as e:

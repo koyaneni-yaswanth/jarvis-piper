@@ -34,7 +34,7 @@ class PiperArmAdapter:
         """Attempts physical SocketCAN link connection."""
         try:
             import can
-            bus = can.interface.Bus(channel=self.can_channel, bustype="socketcan")
+            bus = can.interface.Bus(channel=self.can_channel, interface="socketcan")
             bus.shutdown()
             self.hardware_connected = True
         except Exception:
