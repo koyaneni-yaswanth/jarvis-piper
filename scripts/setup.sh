@@ -4,10 +4,10 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export JARVIS_PIPER_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Source genuine ROS 2 Lyrical if available
-if [ -f "/opt/ros/lyrical/setup.bash" ]; then
-    source "/opt/ros/lyrical/setup.bash"
-    echo "[JARVIS-PiPER] Sourced ROS 2 Lyrical (/opt/ros/lyrical/setup.bash)"
+# Source genuine ROS 2 Humble if available
+if [ -f "/opt/ros/humble/setup.bash" ]; then
+    source "/opt/ros/humble/setup.bash"
+    echo "[JARVIS-PiPER] Sourced ROS 2 Humble (/opt/ros/humble/setup.bash)"
 elif [ -n "${ROS_DISTRO}" ]; then
     echo "[JARVIS-PiPER] Using existing ROS 2 Distro: ${ROS_DISTRO}"
 else
