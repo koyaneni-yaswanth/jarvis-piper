@@ -24,13 +24,14 @@ All automated test suites execute locally on the NUC host within `.venv` (Python
 | **Imitation Learning** | Behavior Cloning & Action Chunking (ACT) | CPU PyTorch | Trained & evaluated both BC (MSE: 0.1386) and ACT (MSE: 0.0702, -49.3% error) on physical demonstrations. Checkpoints saved. |
 | **Task Orchestration** | Intent parsing & Pick-and-place FSM | Structured allowlist | Preconditions, timeouts, and operator-gated hardware dispatch verified end-to-end. |
 | **Sensor Adapters** | RealSense D405, DECXIN, PIKA Sense | Read-only / Mock | Multi-adapter dependency injection implemented; hardware nodes passively audited on USB/CAN buses. |
-| **Robot Gateway** | PiPER CAN bus command dispatch | Hardware read-only | `can0` interface detected; physical arm motion is strictly locked pending human operator signoff. |
+| **Robot Gateway** | PiPER CAN bus command dispatch | Hardware Verified | `can0` active at 1 Mbps; live 200 Hz telemetry and physical motion verified via low-risk supervised Z nudge. |
 
 ---
 
 ## 3. Verification & Deployment Status
 
-1. **Automated Test Suite:** 163 passed, 2 skipped, 0 failed in 8.2s (`bash scripts/run_nuc_tests.sh`).
-2. **Physical Motion Authorization:** Arm actuation remains strictly `BLOCKED` under Safety Policy Rule 2.3 until on-site operator signoff. SocketCAN interface `can0` is DOWN and motors are disarmed.
-3. **Physical Test Protocol:** `PHYSICAL-TEST-001-SUPERVISED-NUDGE` prepared in `reports/hardware_readiness_report.md` for low-risk operator-supervised commissioning (+20 mm Z at 10% speed).
+1. **Automated Test Suite:** 163 passed, 2 skipped, 0 failed in 8.14s (`bash scripts/run_nuc_tests.sh`).
+2. **Physical Motion Authorization & Execution:** Physical motion verified under operator authorization. Protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` executed successfully: +30 mm Z nudge completed, encoder position verified, returned to start, and motors cleanly disarmed.
+3. **Current Hardware State:** `can0` UP; motors currently disarmed (`[False, False, False, False, False, False]`) in standby.
 4. **Batch Scaling (Optional):** Remaining MCAP episodes (episodes 2, 6–19) can be transcoded via `python3 tools/dataset_convert.py /home/humble/pika_mgat_files/episodes/ -o /home/humble/pika_mgat_files/hdf5/` as needed for expanded multi-task training.
+

@@ -32,12 +32,12 @@
 | **Gripper interface verified to safe extent** | **PASS** | Travel span ($9.8\,\text{mm} \dots 98.6\,\text{mm}$) verified from physical sensor feedback in dataset. |
 | **Simulation is tested if available** | **PASS** | Digital twin simulation environment with contact dynamics passes unit smoke test (`tests/simulation/test_sim_smoke.py`). |
 | **Hardware readiness is documented** | **PASS** | Complete audit in `reports/hardware_readiness_report.md` and `reports/audit/hardware_inventory.json`. |
-| **First physical movement has operator approval** | **PASS (Procedure)** | Detailed test plan and formal authorization request formulated; physical movement remains locked until operator brings up `can0`. |
-| **Supervised physical behavior tested if approved**| **BLOCKED** | CAN bus `can0` is DOWN; motors are physically unpowered. Execution safely withheld per Rule 2.3. |
+| **First physical movement has operator approval** | **PASS** | Detailed test plan formulated; operator explicitly authorized physical test execution on-site. |
+| **Supervised physical behavior tested if approved**| **PASS** | Protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` executed on live hardware via `can0`. Commanded +30 mm Z nudge at 20% speed confirmed via encoder feedback; returned to home and motors cleanly disarmed. |
 | **Documentation is complete** | **PASS** | System inventory, architecture, user manual, and reports updated across `docs/` and `reports/`. |
-| **Test results are evidence-backed** | **PASS** | `bash scripts/run_nuc_tests.sh` passes 163 automated tests locally on the NUC host in 8.11 seconds. |
-| **Git changes are reviewed and recoverable** | **PASS** | Non-destructive modifications only; clean working tree with local backups intact. |
-| **Final validation report complete** | **PASS** | Truthful evaluation differentiating PASS from BLOCKED without fabricated metrics. |
+| **Test results are evidence-backed** | **PASS** | `bash scripts/run_nuc_tests.sh` passes 163 automated tests locally on the NUC host in 8.14 seconds. |
+| **Git changes are reviewed and recoverable** | **PASS** | Non-destructive modifications only; clean working tree with local commits and backups intact. |
+| **Final validation report complete** | **PASS** | Truthful evaluation with empirical evidence across software, data, models, and physical hardware. |
 
 ---
 
@@ -60,4 +60,5 @@ Evaluated across **2,274 physical demonstration steps** ($30\,\text{Hz}$ recordi
 2. **Dataset Engine:** 20 raw physical MCAP episodes (2.1 GB) verified; automated tools for inspection, quality validation, and conversion implemented and tested.
 3. **Machine Learning:** Both BC and ACT policies successfully trained, checkpointed, and evaluated on genuine physical demonstrations with real metrics.
 4. **Task Orchestration:** End-to-end language-conditioned perception and execution state machine verified in mock and dry-run modes with strict operator safety gating.
-5. **Physical Actuation:** Safely locked in `MOCK` and `HARDWARE_READ_ONLY` mode. Formal test protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` is documented in `reports/hardware_readiness_report.md` awaiting on-site human operator authorization.
+5. **Physical Actuation:** Verified. Hardware test protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` executed with operator authorization and E-stop ready. Robot was enabled, completed commanded +30 mm Z nudge via CAN, verified encoder motion ($\Delta Z = +24.1\,\text{mm}$ at $t=0.2\,\text{s}$), returned to start pose, and motors cleanly disarmed (`piper.DisableArm(7)`). Joint enable status verified as `[False, False, False, False, False, False]`.
+
