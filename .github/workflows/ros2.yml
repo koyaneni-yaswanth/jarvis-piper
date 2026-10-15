@@ -22,16 +22,32 @@ jobs:
       - name: Install build tools and dependencies
         run: |
           apt-get update && apt-get install -y \
+            git \
+            build-essential \
             python3-colcon-common-extensions \
             python3-rosdep \
             python3-pip \
-            build-essential
-          rosdep update || true
+            ros-humble-cv-bridge \
+            ros-humble-tf2-ros \
+            ros-humble-rosidl-default-generators \
+            ros-humble-rosidl-default-runtime \
+            ros-humble-trajectory-msgs \
+            ros-humble-sensor-msgs \
+            ros-humble-geometry-msgs
+          rosdep init || true
+          rosdep update
           cd ros2_ws
-          rosdep install --from-paths src --ignore-src -r -y
+          rosdep install --from-paths src --ignore-src -r -y --rosdistro humble || true
 
       - name: Build ROS 2 workspace
         run: |
           . /opt/ros/humble/setup.sh
           cd ros2_ws
           colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      - name: Verify generated interfaces
+        run: |
+          . /opt/ros/humble/setup.sh
+          . ros2_ws/install/setup.sh
+          ros2 interface list | grep jarvis_piper || true
+

@@ -12,7 +12,15 @@ Subcommands:
 
 import sys
 import argparse
+from pathlib import Path
+
+# Ensure 'python/' directory is reachable when run from repo root without pip install -e .
+_repo_python_dir = str(Path(__file__).resolve().parent.parent / "python")
+if _repo_python_dir not in sys.path:
+    sys.path.insert(0, _repo_python_dir)
+
 from jarvis.doctor import JarvisDoctor
+
 from jarvis.config_validator import ConfigValidator
 from jarvis.hardware import MockArm, MockGripper, MockTeleop
 from jarvis.safety import SafetySupervisor
@@ -62,7 +70,15 @@ def main():
     p_pol.add_argument("--execute", action="store_true", help="Enable hardware actuation (requires ENABLE MOTION)")
     p_pol.add_argument("--steps", type=int, default=30, help="Rollout steps")
 
+    # vlm
+    p_vlm = subparsers.add_parser("vlm", help="VLM perception and visual task planner")
+    p_vlm.add_argument("--task", type=str, default="Describe the scene", help="Natural language visual task")
+    p_vlm.add_argument("--vlm-type", type=str, default="mock", choices=["mock", "clip", "blip"], help="VLM adapter type")
+    p_vlm.add_argument("--cam-type", type=str, default="mock", choices=["mock", "realsense", "usb", "recorded"], help="Camera source type")
+    p_vlm.add_argument("--evaluate", action="store_true", help="Print VLM hardware evaluation report")
+
     args = parser.parse_args()
+
 
     if args.command == "doctor":
         doc = JarvisDoctor()
@@ -175,9 +191,45 @@ def main():
         print(f"  Reason         : {res['termination_reason']}")
         sys.exit(0)
 
+    elif args.command == "vlm":
+        from jarvis.vlm import (
+            build_vlm,
+            build_camera_source,
+            VisionTaskPlanner,
+            detect_hardware,
+            MODEL_REGISTRY,
+        )
+        if args.evaluate:
+            prof = detect_hardware()
+            print("\n=== VLM Hardware Evaluation Report ===")
+            print(f"System RAM: {prof.system_ram_gb:.1f} GB")
+            print(f"CUDA Available: {prof.has_cuda} (VRAM: {prof.cuda_vram_gb or 0:.1f} GB)")
+            print(f"Recommended Model Tier: {prof.recommended_tier}")
+            print("\nModel Registry:")
+            for name, spec in MODEL_REGISTRY.items():
+                cpu_ms = spec.cpu_latency_ms or "N/A"
+                print(f"  [{name:13s}] {spec.adapter_class:20s} size={spec.approx_size_mb:5.0f}MB CPU={cpu_ms}ms")
+            sys.exit(0)
+
+        print(f"\n[JARVIS VLM] Initializing VLM ({args.vlm_type}) and Camera ({args.cam_type})...")
+        vlm = build_vlm({"type": args.vlm_type})
+        camera = build_camera_source({"type": args.cam_type})
+        planner = VisionTaskPlanner(vlm=vlm, camera=camera)
+        plan = planner.plan(args.task)
+        print("\n=== Generated Plan ===")
+        print(plan.summary())
+        print("\nExecuting plan (dry run / perception only)...")
+        executed = planner.execute_plan(plan, operator_authorized=False)
+        print("\n=== Execution Result ===")
+        for s in executed.steps:
+            print(f"  {s}")
+        print(f"\nPlan completed: success={executed.success}")
+        sys.exit(0 if executed.success is not False else 1)
+
     else:
         parser.print_help()
         sys.exit(0)
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,78 @@
+# JARVIS-PiPER: VLM Configuration Template
+# Copy to configs/local.yaml and customize for your environment.
+# This file must NOT be committed (see .gitignore -> configs/local.yaml).
+
+# =============================================================================
+# Vision-Language Model Configuration
+# =============================================================================
+vlm:
+  # Type: "mock" | "clip" | "blip"
+  # "mock"  -> No weights, deterministic, for MOCK mode and CI.
+  # "clip"  -> CLIP ViT-B/32, text-image similarity. ~338 MB.
+  # "blip"  -> BLIP-base, captioning + VQA. ~990 MB.
+  # "llava" -> NOT implemented. Deferred (requires >=12 GB VRAM).
+  type: "mock"
+
+  # HuggingFace Hub model ID (leave blank to use defaults per type)
+  model_id: ""
+
+  # Local cache directory for model weights. Strongly recommended.
+  # Default: ~/.cache/huggingface/hub/
+  cache_dir: ""  # e.g. "/data/models/hf_cache"
+
+  # NEVER set to true in production without understanding the implications:
+  # - Downloads up to 14 GB of data.
+  # - Sends model ID metadata to HuggingFace servers.
+  # - Only enable for explicit setup/initialization runs.
+  download_if_missing: false
+
+  # Inference timeout in seconds. Increase for slow CPU.
+  timeout_s: 30.0
+
+  # Force CPU even when CUDA is available.
+  # Set to true on NUC 14 (no NVIDIA GPU).
+  force_cpu: true
+
+# =============================================================================
+# Camera Configuration
+# =============================================================================
+cameras:
+  # Primary camera for VLM perception
+  primary:
+    # Type: "mock" | "realsense" | "usb" | "recorded"
+    type: "mock"
+
+    # Explicit dimensions — always required
+    width: 640
+    height: 480
+    fps: 30
+
+    # For "usb" type: V4L2 device index (e.g., 0 for /dev/video0)
+    # MUST be set explicitly. No default assumed.
+    # device_index: 0
+
+    # For "realsense" type: serial number (optional, uses first device if absent)
+    # serial: ""
+
+    # For "recorded" type: path to image directory or list of image files
+    # paths: "/data/recorded_episodes/episode_001/frames/"
+
+    # For "recorded" type: whether to loop after last frame
+    # loop: false
+
+  # Depth source (used for 3D object localization)
+  depth:
+    # If "realsense" is the primary, depth is already captured with enable_depth=true.
+    # Set to "none" if no depth sensor is available.
+    type: "mock"
+    depth_mm: 550  # Default depth in mock mode
+
+# =============================================================================
+# Task Planner Configuration
+# =============================================================================
+task_planner:
+  # Uncertainty threshold above which operator clarification is requested
+  uncertainty_threshold: 0.7
+
+  # Whether to request operator clarification on low-confidence results
+  request_clarification_on_uncertainty: true

@@ -36,6 +36,19 @@ ml = [
     "torch>=2.0.0",
     "torchvision>=0.15.0",
 ]
+vlm = [
+    # Tier 2: CLIP (CPU-capable, ~338 MB)
+    "transformers>=4.36.0",
+    "pillow>=9.0.0",
+    "accelerate>=0.24.0",
+    # Tier 3: BLIP (CPU-capable, ~990 MB) — same deps as CLIP
+    # torch and torchvision already in [ml]
+]
+cameras = [
+    # Uncomment on NUC after installing system-level RealSense SDK:
+    # "pyrealsense2>=2.54.0",
+    "opencv-python>=4.8.0",
+]
 
 [project.scripts]
 jarvis = "jarvis.cli:main"

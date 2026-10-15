@@ -11,6 +11,36 @@ tqdm>=4.65.0
 matplotlib>=3.7.0
 scikit-learn>=1.2.0
 
+# =============================================================================
+# VLM / Vision-Language Model Dependencies (Phase B)
+# =============================================================================
+# Install only what is needed for your chosen model tier.
+#
+# Tier 1 (MOCK / CI):    No extra deps — MockVLMAdapter needs only numpy.
+# Tier 2 (CLIP CPU):     pip install transformers pillow accelerate
+# Tier 3 (BLIP CPU):     pip install transformers pillow accelerate
+# Tier 4 (LLaVA GPU):    Requires >=12 GB VRAM — not supported on NUC 14.
+#                         Deferred until eGPU is available.
+#
+# Weights are NOT downloaded automatically.
+# To pre-download CLIP: python -c "from transformers import CLIPModel;
+#     CLIPModel.from_pretrained('openai/clip-vit-base-patch32')"
+# To pre-download BLIP: python -c "from transformers import BlipProcessor;
+#     BlipProcessor.from_pretrained('Salesforce/blip-image-captioning-base')"
+#
+# Estimated disk space:
+#   CLIP ViT-B/32     : ~338 MB
+#   BLIP-base caption : ~990 MB
+#   BLIP-base VQA     : ~990 MB
+
+transformers>=4.36.0
+pillow>=9.0.0
+accelerate>=0.24.0         # optional but speeds up model loading
+
+# Camera hardware (optional — only needed when real cameras are connected)
+# pyrealsense2>=2.54.0     # Intel RealSense D405 (uncomment on NUC)
+# opencv-python>=4.8.0     # USB camera + image I/O (uncomment as needed)
+
 # Optional Imitation Learning & Foundation Model Tools
 # lerobot>=0.1.0
 # einops>=0.6.0
