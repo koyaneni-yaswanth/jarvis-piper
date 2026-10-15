@@ -23,11 +23,13 @@ def evaluate_policy(checkpoint_path: str, data_dir: str = "dataset/raw"):
     device = torch.device("cpu")
     ckpt = torch.load(checkpoint_path, map_location=device)
     model_type = ckpt.get("model_type", "bc")
+    obs_dim = ckpt.get("obs_dim", 16)
+    action_dim = ckpt.get("action_dim", 8)
 
     if model_type == "act":
-        policy = ActionChunkingPolicy(obs_dim=16, action_dim=8, chunk_size=5)
+        policy = ActionChunkingPolicy(obs_dim=obs_dim, action_dim=action_dim, chunk_size=5)
     else:
-        policy = BehavioralCloningPolicy(obs_dim=16, action_dim=8, hidden_dim=256, num_layers=4)
+        policy = BehavioralCloningPolicy(obs_dim=obs_dim, action_dim=action_dim, hidden_dim=256, num_layers=4)
 
     policy.load_state_dict(ckpt["model_state_dict"])
     policy.eval()

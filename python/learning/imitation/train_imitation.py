@@ -20,29 +20,53 @@ from learning.imitation.models import BehavioralCloningPolicy, ActionChunkingPol
 
 
 def load_demonstration_tensors(data_dir: str):
-    """Loads recorded episodes and extracts (obs, action) tensor pairs."""
-    ep_dirs = sorted(glob.glob(os.path.join(data_dir, "ep_*")))
+    """Loads recorded episodes (from HDF5 or JSON) and extracts (obs, action) tensor pairs."""
     all_obs = []
     all_acts = []
 
-    for ep_p in ep_dirs:
-        traj_p = os.path.join(ep_p, "trajectory.json")
-        if not os.path.exists(traj_p):
-            continue
-        with open(traj_p, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        steps = data.get("timesteps", [])
-        for s in steps:
-            q = s.get("joint_positions", [0.0] * 6)[:6]
-            v = s.get("joint_velocities", [0.0] * 6)[:6]
-            tcp_pos = s.get("tcp_pose", {}).get("position", [0.35, 0.0, 0.25])[:3]
-            stroke = s.get("gripper_stroke", 0.035)
+    # 1. Check for HDF5 demonstration files
+    h5_files = []
+    if os.path.isfile(data_dir) and (data_dir.endswith(".hdf5") or data_dir.endswith(".h5")):
+        h5_files = [data_dir]
+    elif os.path.isdir(data_dir):
+        h5_files = sorted(glob.glob(os.path.join(data_dir, "*.hdf5")) + glob.glob(os.path.join(data_dir, "*.h5")))
 
-            obs = q + v + tcp_pos + [stroke]
-            act = s.get("action", q)[:6] + [stroke, 1.0]
+    if h5_files:
+        import h5py
+        print(f"[INFO] Discovered {len(h5_files)} HDF5 demonstration file(s) in {data_dir}")
+        for h5_p in h5_files:
+            try:
+                with h5py.File(h5_p, "r") as f:
+                    if "observations/qpos" in f and "action" in f:
+                        qpos = f["observations/qpos"][:]
+                        act = f["action"][:]
+                        for q, a in zip(qpos, act):
+                            all_obs.append(q)
+                            all_acts.append(a)
+            except Exception as e:
+                print(f"[WARN] Error reading HDF5 {h5_p}: {e}")
 
-            all_obs.append(obs)
-            all_acts.append(act)
+    # 2. Check for JSON trajectory directories
+    if not all_obs and os.path.isdir(data_dir):
+        ep_dirs = sorted(glob.glob(os.path.join(data_dir, "ep_*")))
+        for ep_p in ep_dirs:
+            traj_p = os.path.join(ep_p, "trajectory.json")
+            if not os.path.exists(traj_p):
+                continue
+            with open(traj_p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            steps = data.get("timesteps", [])
+            for s in steps:
+                q = s.get("joint_positions", [0.0] * 6)[:6]
+                v = s.get("joint_velocities", [0.0] * 6)[:6]
+                tcp_pos = s.get("tcp_pose", {}).get("position", [0.35, 0.0, 0.25])[:3]
+                stroke = s.get("gripper_stroke", 0.035)
+
+                obs = q + v + tcp_pos + [stroke]
+                act = s.get("action", q)[:6] + [stroke, 1.0]
+
+                all_obs.append(obs)
+                all_acts.append(act)
 
     if not all_obs:
         print("[INFO] No existing episodes found. Generating synthetic demonstration buffer...")
@@ -86,10 +110,13 @@ def train_policy(
     dataset = TensorDataset(obs_tensor, act_tensor)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
+    obs_dim = int(obs_tensor.shape[1])
+    action_dim = int(act_tensor.shape[1])
+
     if model_type.lower() == "act":
-        policy = ActionChunkingPolicy(obs_dim=16, action_dim=8, chunk_size=5).to(device)
+        policy = ActionChunkingPolicy(obs_dim=obs_dim, action_dim=action_dim, chunk_size=5).to(device)
     else:
-        policy = BehavioralCloningPolicy(obs_dim=16, action_dim=8, hidden_dim=256, num_layers=4).to(device)
+        policy = BehavioralCloningPolicy(obs_dim=obs_dim, action_dim=action_dim, hidden_dim=256, num_layers=4).to(device)
 
     policy.set_normalization_stats(mean_obs.to(device), std_obs.to(device))
 
@@ -146,6 +173,8 @@ def train_policy(
         "loss_history": history,
         "final_loss": history[-1],
         "model_type": model_type,
+        "obs_dim": obs_dim,
+        "action_dim": action_dim,
         "training_duration_s": elapsed,
     }, checkpoint_path)
 
@@ -157,8 +186,8 @@ def train_policy(
         "epochs": epochs,
         "final_mse_loss": float(history[-1]),
         "device": str(device),
-        "obs_dim": 16,
-        "action_dim": 8,
+        "obs_dim": obs_dim,
+        "action_dim": action_dim,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     with open(os.path.join(output_dir, f"{model_type}_manifest.json"), "w", encoding="utf-8") as f:

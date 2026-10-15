@@ -1,0 +1,85 @@
+{
+  "audit_timestamp": "2026-10-15T17:59:00+05:30",
+  "host_machine": "humble-NUC14RVS-B",
+  "kernel": "Linux 6.8.0-138-generic x86_64",
+  "devices": {
+    "robot_arm": {
+      "model": "AgileX PiPER 6-DOF Manipulator",
+      "firmware": "S-V1.6-3",
+      "communication_bus": "SocketCAN",
+      "can_interface": "can0",
+      "can_adapter": {
+        "device_name": "Geschwister Schneider CAN adapter (candleLight)",
+        "vendor": "OpenMoko, Inc.",
+        "vendor_id": "0x1d50",
+        "product_id": "0x606f",
+        "usb_bus": 1,
+        "usb_device": 2
+      },
+      "configured_bitrate_bps": 1000000,
+      "link_state": "DOWN",
+      "operating_mode": "MOCK",
+      "motor_enable_state": "DISABLED",
+      "verification_status": "PASS (Read-Only / Unactuated Safety Protocol)"
+    },
+    "optical_tracker": {
+      "model": "AgileX PIKA Sense 6-DOF Handheld Tracker",
+      "tracking_technology": "SteamVR / HTC Vive Lighthouse Optical Tracking",
+      "dongle": {
+        "device_name": "Valve Software Watchman Dongle",
+        "vendor_id": "0x28de",
+        "product_id": "0x2101",
+        "usb_bus": 1,
+        "usb_device": 4
+      },
+      "tracker_hardware": {
+        "device_name": "Valve Software LHR",
+        "vendor_id": "0x28de",
+        "product_id": "0x2300",
+        "usb_bus": 1,
+        "usb_device": 11
+      },
+      "auxiliary_serial": {
+        "device_name": "QinHeng Electronics USB Serial (CH341)",
+        "vendor_id": "0x1a86",
+        "product_id": "0x7522",
+        "device_node": "/dev/ttyUSB0",
+        "symlink_alias": "/dev/ttyUSB50",
+        "usb_bus": 1,
+        "usb_device": 10
+      },
+      "base_stations": "2x PIKA Stations (HTC Vive Lighthouse Base Stations)",
+      "verification_status": "PASS (Detected on USB bus)"
+    },
+    "wrist_camera": {
+      "model": "Intel RealSense Depth Camera D405",
+      "vendor_id": "0x8086",
+      "product_id": "0x0b5b",
+      "usb_bus": 1,
+      "usb_device": 8,
+      "video_nodes": ["/dev/video2", "/dev/video3", "/dev/video4", "/dev/video5", "/dev/video6", "/dev/video7"],
+      "media_node": "/dev/media1",
+      "supported_streams": ["color (RGB)", "depth (Z16)"],
+      "measured_depth_scale_m": 0.00009999999747378752,
+      "verification_status": "PASS (Verified via udev and recorded dataset metadata)"
+    },
+    "overhead_camera": {
+      "model": "DECXIN / Sunplus USB RGB Camera",
+      "vendor_id": "0x1bcf",
+      "product_id": "0x2cd1",
+      "usb_bus": 1,
+      "usb_device": 7,
+      "video_nodes": ["/dev/video0", "/dev/video1"],
+      "symlink_alias": "/dev/video50",
+      "media_node": "/dev/media0",
+      "format": "MJPG / YUYV 640x480 @ 30 fps",
+      "verification_status": "PASS (Verified via v4l2-ctl)"
+    },
+    "gripper": {
+      "model": "PIKA Parallel Linear Stroke Gripper",
+      "stroke_limits_m": [0.0, 0.035],
+      "sensor_travel_span_mm": [9.8, 98.6],
+      "verification_status": "PASS (Calibrated in dataset and teleop pipeline)"
+    }
+  }
+}

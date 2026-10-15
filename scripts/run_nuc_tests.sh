@@ -17,7 +17,15 @@ echo "==========================================================================
 cd "${REPO_ROOT}"
 
 # 1. Check Python Interpreter
-PY_EXE=$(command -v python3 || command -v python)
+if [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+    PY_EXE="$VIRTUAL_ENV/bin/python3"
+elif [ -x "${REPO_ROOT}/.venv/bin/python3" ]; then
+    PY_EXE="${REPO_ROOT}/.venv/bin/python3"
+elif [ -x "${REPO_ROOT}/.venv/bin/python" ]; then
+    PY_EXE="${REPO_ROOT}/.venv/bin/python"
+else
+    PY_EXE=$(command -v python3 || command -v python)
+fi
 if [ -z "$PY_EXE" ]; then
     echo "[ERROR] python3 not found on PATH."
     exit 1
@@ -56,6 +64,7 @@ $PY_EXE -m jarvis.cli doctor || {
 # 6. Full Automated Test Suite Execution
 echo ""
 echo "[Step 3/3] Running full automated test suite (Mock / Safety / Unit)..."
+export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 $PY_EXE -m pytest tests/ -v --tb=short
 
 TEST_EXIT=$?

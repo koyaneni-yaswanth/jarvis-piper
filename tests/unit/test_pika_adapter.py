@@ -24,8 +24,9 @@ from jarvis.hardware import RealPikaSense
 from jarvis.errors import DeviceNotFoundError
 
 
-def test_pika_discovery_missing_dongle(tmp_path):
+def test_pika_discovery_missing_dongle(tmp_path, monkeypatch):
     """When SteamVR dongle is absent, discovery reports clean NOT_DETECTED status."""
+    monkeypatch.setattr(PikaDiscovery, "_probe_usb", lambda rep: None)
     dummy_config = tmp_path / "nonexistent_config.json"
     report = PikaDiscovery.discover(config_path=str(dummy_config))
 
@@ -128,8 +129,9 @@ def test_tracking_validator_criteria():
     assert any("identity transform" in e for e in errs_ident)
 
 
-def test_real_pika_sense_missing_dongle(tmp_path):
+def test_real_pika_sense_missing_dongle(tmp_path, monkeypatch):
     """RealPikaSense must fail cleanly with DeviceNotFoundError when dongle is absent."""
+    monkeypatch.setattr(PikaDiscovery, "_probe_usb", lambda rep: None)
     sensor = RealPikaSense(config_path=str(tmp_path / "missing.json"))
     assert sensor.is_connected() is False
     assert sensor.get_tracking_age() == float("inf")
