@@ -65,6 +65,8 @@ $PY_EXE -m jarvis.cli doctor || {
 echo ""
 echo "[Step 3/3] Running full automated test suite (Mock / Safety / Unit)..."
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+export TORCH_COMPILE_DISABLE=1
+export TORCHDYNAMO_DISABLE=1
 $PY_EXE -m pytest tests/ -v --tb=short
 
 TEST_EXIT=$?

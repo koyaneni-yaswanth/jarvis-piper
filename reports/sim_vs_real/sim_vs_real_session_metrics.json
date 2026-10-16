@@ -1,0 +1,64 @@
+{
+  "dataset_name": "session",
+  "source_file": "/home/humble/robotics/jarvis-piper/data/recordings/live_obs_20261016_170044/session.h5",
+  "dataset_format": "DIRECT_JOINT_TELEMETRY",
+  "evaluated_steps": 46,
+  "total_episode_steps": 46,
+  "fidelity_status": "PASS",
+  "composite_fidelity_score": 74.6,
+  "cartesian_metrics": {
+    "mae_mm": 11.266,
+    "rmse_mm": 11.425,
+    "max_error_mm": 13.167,
+    "pearson_r_xyz": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "joint_metrics": {
+    "overall_mae_rad": 0.01622,
+    "overall_mae_deg": 0.929,
+    "overall_mse_rad2": 0.000555,
+    "per_joint_mae_deg": [
+      0.0,
+      2.086,
+      2.04,
+      0.001,
+      1.439,
+      0.011
+    ],
+    "per_joint_max_deg": [
+      0.001,
+      2.21,
+      2.223,
+      0.001,
+      1.608,
+      0.048
+    ],
+    "per_joint_pearson_r": [
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ]
+  },
+  "gripper_metrics": {
+    "stroke_mae_mm": 0.043,
+    "stroke_max_mm": 0.05
+  },
+  "render_verification": {
+    "wrist_rgb_shape": [
+      240,
+      320,
+      3
+    ],
+    "depth_range_m": [
+      0.021,
+      62.05
+    ]
+  },
+  "timestamp": "2026-10-16T17:46:33Z"
+}

@@ -1,0 +1,64 @@
+{
+  "dataset_name": "episode_0000",
+  "source_file": "/home/humble/pika_mgat_files/hdf5/episode_0000.hdf5",
+  "dataset_format": "CANONICAL_CARTESIAN_ALOHA",
+  "evaluated_steps": 100,
+  "total_episode_steps": 470,
+  "fidelity_status": "WARN",
+  "composite_fidelity_score": 56.0,
+  "cartesian_metrics": {
+    "mae_mm": 627.075,
+    "rmse_mm": 713.95,
+    "max_error_mm": 1243.708,
+    "pearson_r_xyz": [
+      0.836,
+      0.275,
+      -0.2513
+    ]
+  },
+  "joint_metrics": {
+    "overall_mae_rad": 0.02782,
+    "overall_mae_deg": 1.594,
+    "overall_mse_rad2": 0.019897,
+    "per_joint_mae_deg": [
+      4.922,
+      0.455,
+      0.54,
+      0.851,
+      2.778,
+      0.019
+    ],
+    "per_joint_max_deg": [
+      97.989,
+      8.95,
+      7.731,
+      13.843,
+      62.556,
+      0.658
+    ],
+    "per_joint_pearson_r": [
+      0.9412,
+      0.9849,
+      0.9026,
+      0.9677,
+      0.9292,
+      0.9887
+    ]
+  },
+  "gripper_metrics": {
+    "stroke_mae_mm": 22.761,
+    "stroke_max_mm": 86.543
+  },
+  "render_verification": {
+    "wrist_rgb_shape": [
+      240,
+      320,
+      3
+    ],
+    "depth_range_m": [
+      0.021,
+      62.05
+    ]
+  },
+  "timestamp": "2026-10-16T17:45:24Z"
+}

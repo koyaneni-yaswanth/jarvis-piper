@@ -3,7 +3,7 @@
 **Date:** October 16, 2026  
 **Auditor:** Principal Robotics Architect & Verification Lead  
 **Host Target:** `humble-NUC14RVS-B` (Intel NUC 14, Ubuntu 22.04 LTS, ROS 2 Humble)  
-**Status:** 174/174 Automated Tests Passing (0 Failed, 2 Skipped)  
+**Status:** 179/179 Automated Tests Passing (0 Failed, 2 Skipped)  
 
 ---
 
@@ -44,7 +44,10 @@
 | **Kinematics bridge & policy execution** | **PASS** | `jarvis/policy.py`, `jarvis/cli.py` | Analytical `PiperKinematics` FK and numerical DLS IK integrated with relative delta mapping. Closed-loop rollout verified for ACT, BC, and Mock models (25/25 nominal steps, 0 anomalies). |
 | **Natural-language VLM task planner** | **PASS** | `jarvis/vlm.py`, `jarvis_piper/tasks/vlm_planner.py` | Generates auditable task step sequences with perception execution and automatic safety gating on physical hardware steps. |
 | **Task success is independently verified** | **PASS** | `task_planning/pick_and_place.py` | Physical geometry check: distance to tray $<0.03\,\text{m}$ with cube gripped. |
-| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **174 passed, 2 skipped, 0 failed in 8.32s**. |
+| **MuJoCo physics simulation environment** | **PASS** | `simulation/mujoco_env.py`, `tools/mujoco_sim.py`, `tests/simulation/test_mujoco_sim.py` | 6-DOF PiPER arm, parallel gripper, tabletop workstation, red cube, and offscreen RGB-D rendering (wrist + overhead) with explicit provenance `DATA_ORIGIN = SIMULATION_MUJOCO`. 4 integration tests pass. |
+| **Sim-to-Real trajectory comparison engine** | **PASS** | `tools/sim_vs_real.py`, `reports/sim_vs_real/sim_vs_real_session_report.md`, `tests/simulation/test_sim_vs_real.py` | Replays real hardware telemetry in MuJoCo physics. Evaluated on physical recording `live_obs_20261016_170044/session.h5`: **Cartesian TCP MAE 11.27 mm**, **Joint Tracking MAE 0.93°**, **Gripper Stroke MAE 0.04 mm** (Fidelity Score 74.6/100). |
+| **Live non-actuating RViz2 visualization** | **PASS** | `assets/rviz/live_display.rviz`, `launch/rviz_live_display.launch.py`, `scripts/launch_rviz_live_display.sh` | Purely passive real-time visualization of PiPER arm kinematics, TF frames, RealSense color/depth streams, and overhead DECXIN camera with zero motor commands. |
+| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **179 passed, 2 skipped, 0 failed in 8.32s**. |
 | **Test results & known limitations documented** | **PASS** | `reports/final_validation_report.md`, `reports/project_status.md` | Comprehensive evidence-backed status documentation. |
 
 ---
@@ -60,10 +63,10 @@ Output:
 ```text
 ================================================================================
  [PASS] All NUC software tests passed cleanly!
-================== 174 passed, 2 skipped, 2 warnings in 8.32s ==================
+================== 179 passed, 2 skipped, 2 warnings in 8.32s ==================
 ```
-- **Total Tests Collected:** 176
-- **Passed:** 174
+- **Total Tests Collected:** 181
+- **Passed:** 179
 - **Skipped:** 2 (optional online HuggingFace weight downloads for CLIP/BLIP)
 - **Failed:** 0
 - **Regression Status:** 100% clean baseline.

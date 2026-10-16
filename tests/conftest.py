@@ -10,3 +10,11 @@ if root_dir not in sys.path:
 if python_dir not in sys.path:
     sys.path.insert(0, python_dir)
 
+# Pre-initialize Triton before any OpenGL/MuJoCo contexts are created.
+# On Linux systems with Mesa EGL/LLVM, importing Triton after MuJoCo Renderer EGL has loaded
+# causes a dynamic linker collision segfault. Pre-loading Triton guarantees safe co-existence.
+try:
+    import triton  # noqa: F401
+except Exception:
+    pass
+
