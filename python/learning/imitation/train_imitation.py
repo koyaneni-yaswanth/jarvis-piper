@@ -16,6 +16,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
+# Ensure repo python/ directory is in sys.path
+_repo_python = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _repo_python not in sys.path:
+    sys.path.insert(0, _repo_python)
+
 from learning.imitation.models import BehavioralCloningPolicy, ActionChunkingPolicy
 
 
@@ -40,6 +45,9 @@ def load_demonstration_tensors(data_dir: str):
                     if "observations/qpos" in f and "action" in f:
                         qpos = f["observations/qpos"][:]
                         act = f["action"][:]
+                        if len(qpos) < 50:
+                            print(f"[INFO] Skipping {os.path.basename(h5_p)}: Insufficient frames ({len(qpos)} < 50)")
+                            continue
                         for q, a in zip(qpos, act):
                             all_obs.append(q)
                             all_acts.append(a)
@@ -202,6 +210,7 @@ def main():
     parser.add_argument("--data-dir", default="dataset/raw", help="Path to raw dataset")
     parser.add_argument("--output-dir", default="models/checkpoints/imitation", help="Checkpoint output folder")
     parser.add_argument("--epochs", type=int, default=20, help="Training epochs")
+    parser.add_argument("--batch-size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--model-type", choices=["bc", "act"], default="bc", help="Policy architecture")
     args = parser.parse_args()
 
@@ -209,6 +218,7 @@ def main():
         data_dir=args.data_dir,
         output_dir=args.output_dir,
         epochs=args.epochs,
+        batch_size=args.batch_size,
         model_type=args.model_type,
     )
 

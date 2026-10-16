@@ -19,6 +19,12 @@ from jarvis.hardware import ArmInterface, GripperInterface
 from jarvis.train import BCPolicy
 
 
+try:
+    from world_model.spatial import PiperKinematics
+except ImportError:
+    from python.world_model.spatial import PiperKinematics
+
+
 class SupervisedPolicyRunner:
     """
     Supervised rollout orchestrator for physical and simulated deployment.
@@ -26,7 +32,7 @@ class SupervisedPolicyRunner:
 
     def __init__(
         self,
-        policy: BCPolicy,
+        policy: Any,
         arm: ArmInterface,
         gripper: GripperInterface,
         safety_supervisor: SafetySupervisor,
@@ -36,6 +42,7 @@ class SupervisedPolicyRunner:
         self.arm = arm
         self.gripper = gripper
         self.safety = safety_supervisor
+        self.kinematics = PiperKinematics()
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
 
@@ -64,6 +71,15 @@ class SupervisedPolicyRunner:
         dt = 1.0 / control_hz
         start_time = time.time()
 
+        # Arm initial pose
+        initial_q = self.arm.get_joint_state()["positions"]
+        arm_start_pos, _ = self.kinematics.compute_fk(initial_q)
+
+        # Baseline tracker pose for relative incremental policy execution
+        # (Default canonical demonstration starting pose in tracking frame)
+        canonical_tracker_start = [0.067, 0.717, -0.167, -0.266, 0.333, 0.577, 0.695, 99.0]
+        tracker_curr = list(canonical_tracker_start)
+
         for step in range(max_steps):
             step_start = time.time()
 
@@ -71,17 +87,49 @@ class SupervisedPolicyRunner:
             state = self.arm.get_joint_state()
             current_q = state["positions"]
             stroke = self.gripper.get_stroke()
-            obs = current_q + [stroke]
+            target_dim = getattr(self.policy, "obs_dim", 7)
 
-            # 2. Policy forward pass
-            pred_act = self.policy.predict(obs)
-            target_q = pred_act[:6]
-            target_stroke = pred_act[6] if len(pred_act) > 6 else stroke
+            if target_dim == 8:
+                # 8D Cartesian demonstration policy [x, y, z, qx, qy, qz, qw, grip_mm]
+                pred_act = self.policy.predict(tracker_curr)
+                tracker_curr = list(pred_act)
+
+                # Compute Cartesian delta relative to demonstration origin
+                delta_pos = np.array(pred_act[:3]) - np.array(canonical_tracker_start[:3])
+                # Scale delta into arm workspace (0.5 scale factor for gentle motion)
+                target_pos = np.array(arm_start_pos) + delta_pos * 0.5
+                target_stroke_mm = pred_act[7] if len(pred_act) > 7 else stroke * 1000.0
+                target_stroke = float(np.clip(target_stroke_mm / 1000.0, 0.0, 0.070))
+
+                # Numerical IK
+                ik_q, ik_ok = self.kinematics.compute_ik(list(target_pos), q_init=current_q)
+                if ik_ok and ik_q is not None:
+                    target_q = ik_q
+                else:
+                    target_q = list(current_q)
+
+                obs = list(tracker_curr)
+            else:
+                # 7D Joint-space policy [q1, q2, q3, q4, q5, q6, stroke]
+                obs = current_q + [stroke]
+                pred_act = self.policy.predict(obs)
+                target_q = pred_act[:6]
+                target_stroke = pred_act[6] if len(pred_act) > 6 else stroke
+
+            # Clamp policy unconstrained output to physical joint limits
+            clamped_target_q = []
+            for j in range(6):
+                lim_min, lim_max = self.safety.JOINT_LIMITS[j]
+                clamped_target_q.append(float(np.clip(target_q[j], lim_min, lim_max)))
+
+            # Check clamping delta for anomaly tracking
+            if np.max(np.abs(np.array(clamped_target_q) - np.array(target_q))) > 0.05:
+                clamped_count += 1
 
             # 3. Pass through Safety Supervisor
             try:
                 safe_q = self.safety.validate_and_filter(
-                    command_q=target_q,
+                    command_q=clamped_target_q,
                     current_q=current_q,
                     clutch_engaged=True,
                     is_hardware_target=(not dry_run),
@@ -91,14 +139,15 @@ class SupervisedPolicyRunner:
                 reason = f"Safety stop triggered: {e}"
                 break
 
-            # Check clamping delta
-            if np.max(np.abs(np.array(safe_q) - np.array(target_q))) > 0.05:
-                clamped_count += 1
-
             # 4. Actuate only if NOT dry-run
             if not dry_run:
                 self.arm.command_joint_positions(safe_q)
                 self.gripper.command_stroke(target_stroke)
+            else:
+                if hasattr(self.arm, "q"):
+                    self.arm.q = list(safe_q)
+                if hasattr(self.gripper, "stroke"):
+                    self.gripper.stroke = float(target_stroke)
 
             records.append({
                 "step": step,

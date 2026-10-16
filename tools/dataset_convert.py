@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--jpeg", action="store_true", help="Store compressed JPEG bytes in HDF5")
     parser.add_argument("--max-trim", type=float, default=0.20, help="Maximum allowed fraction of trimmed frames")
     parser.add_argument("--manifest", type=str, default="dataset_manifest.json", help="Manifest output filename")
+    parser.add_argument("--skip-existing", action="store_true", help="Skip already converted HDF5 files")
     args = parser.parse_args()
 
     in_path = Path(args.input_path)
@@ -52,6 +53,17 @@ def main():
     manifest = []
 
     for f in mcap_files:
+        target_h5 = out_dir / f"{f.stem}.hdf5"
+        if args.skip_existing and target_h5.exists():
+            print(f"Skipping (already exists): {f.name} -> {target_h5.name}")
+            manifest.append({
+                "episode_id": f.stem,
+                "source_mcap": str(f.resolve()),
+                "converted_hdf5": str(target_h5.resolve()),
+                "status": "CONVERTED"
+            })
+            continue
+
         print(f"Processing: {f.name} ... ", end="", flush=True)
         try:
             out_file = convert(f, out_dir, store_jpeg=args.jpeg, max_trim=args.max_trim)

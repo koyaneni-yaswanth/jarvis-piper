@@ -56,6 +56,13 @@ class BehavioralCloningPolicy(nn.Module):
         action = self.action_head(feat)
         return action
 
+    def predict(self, obs_vec: list) -> list:
+        self.eval()
+        with torch.no_grad():
+            t = torch.tensor(obs_vec, dtype=torch.float32).unsqueeze(0).to(self.obs_mean.device)
+            out = self.forward(t).squeeze(0).cpu().numpy()
+            return [float(x) for x in out]
+
 
 class ActionChunkingPolicy(nn.Module):
     """
@@ -98,3 +105,11 @@ class ActionChunkingPolicy(nn.Module):
         chunk = self.chunk_head(feat)
         batch_size = obs.shape[0]
         return chunk.view(batch_size, self.chunk_size, self.action_dim)
+
+    def predict(self, obs_vec: list) -> list:
+        self.eval()
+        with torch.no_grad():
+            t = torch.tensor(obs_vec, dtype=torch.float32).unsqueeze(0).to(self.obs_mean.device)
+            out = self.forward(t).squeeze(0).cpu().numpy()
+            return [float(x) for x in out[0]]
+

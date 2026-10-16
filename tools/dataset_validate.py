@@ -135,12 +135,33 @@ def main():
     args = parser.parse_args()
 
     path = Path(args.file_path)
-    if not path.is_file():
-        print(f"[ERROR] File not found: {path}")
+    if path.is_file():
+        files = [path]
+    elif path.is_dir():
+        files = sorted(list(path.glob("*.hdf5")) + list(path.glob("*.h5")))
+        if not files:
+            print(f"[ERROR] No HDF5 files found in directory: {path}")
+            sys.exit(1)
+        print(f"[INFO] Validating {len(files)} HDF5 dataset files in {path}...")
+    else:
+        print(f"[ERROR] File or directory not found: {path}")
         sys.exit(1)
 
-    ok = validate_hdf5(path)
-    sys.exit(0 if ok else 1)
+    all_passed = True
+    pass_count = 0
+    fail_count = 0
+    for f in files:
+        ok = validate_hdf5(f)
+        if ok:
+            pass_count += 1
+        else:
+            fail_count += 1
+            all_passed = False
+
+    print("\n" + "=" * 80)
+    print(f"BATCH VALIDATION SUMMARY: {pass_count} Passed, {fail_count} Failed out of {len(files)} datasets")
+    print("=" * 80)
+    sys.exit(0 if all_passed else 1)
 
 
 if __name__ == "__main__":

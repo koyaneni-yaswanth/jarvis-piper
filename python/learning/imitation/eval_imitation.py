@@ -11,6 +11,10 @@ import sys
 import numpy as np
 import torch
 
+_repo_python = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _repo_python not in sys.path:
+    sys.path.insert(0, _repo_python)
+
 from learning.imitation.models import BehavioralCloningPolicy, ActionChunkingPolicy
 from learning.imitation.train_imitation import load_demonstration_tensors
 

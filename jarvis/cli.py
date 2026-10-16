@@ -10,6 +10,7 @@ Subcommands:
   jarvis policy     # Supervised policy rollout (defaults to --dry-run)
 """
 
+import os
 import sys
 import argparse
 from pathlib import Path
@@ -69,6 +70,7 @@ def main():
     p_pol.add_argument("--dry-run", action="store_true", default=True, help="Compute actions without physical movement (default)")
     p_pol.add_argument("--execute", action="store_true", help="Enable hardware actuation (requires ENABLE MOTION)")
     p_pol.add_argument("--steps", type=int, default=30, help="Rollout steps")
+    p_pol.add_argument("--model", type=str, default="act", choices=["act", "bc", "mock"], help="Model architecture: act, bc, or mock (default: act)")
 
     # vlm
     p_vlm = subparsers.add_parser("vlm", help="VLM perception and visual task planner")
@@ -175,7 +177,35 @@ def main():
         gripper = MockGripper()
         gripper.connect()
         safety = SafetySupervisor()
-        policy = BCPolicy()
+        policy = None
+        model_choice = getattr(args, "model", "act").lower()
+
+        if model_choice in ("act", "bc"):
+            ckpt_path = f"models/checkpoints/imitation/{model_choice}_piper_policy.pt"
+            if os.path.exists(ckpt_path):
+                try:
+                    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+                    py_path = os.path.join(repo_root, "python")
+                    if py_path not in sys.path:
+                        sys.path.insert(0, py_path)
+                    import torch
+                    from learning.imitation.models import BehavioralCloningPolicy, ActionChunkingPolicy
+                    ckpt = torch.load(ckpt_path, map_location="cpu")
+                    obs_d = ckpt.get("obs_dim", 8)
+                    act_d = ckpt.get("action_dim", 8)
+                    if model_choice == "act":
+                        policy = ActionChunkingPolicy(obs_dim=obs_d, action_dim=act_d, chunk_size=5)
+                    else:
+                        policy = BehavioralCloningPolicy(obs_dim=obs_d, action_dim=act_d)
+                    policy.load_state_dict(ckpt["model_state_dict"])
+                    if "obs_mean" in ckpt and "obs_std" in ckpt:
+                        policy.set_normalization_stats(ckpt["obs_mean"], ckpt["obs_std"])
+                    print(f"[INFO] Loaded trained {model_choice.upper()} policy from {ckpt_path}")
+                except Exception as e:
+                    print(f"[WARN] Could not load checkpoint {ckpt_path}: {e}")
+
+        if policy is None:
+            policy = BCPolicy()
 
         dry_run = not args.execute
         token = None
