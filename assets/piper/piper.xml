@@ -14,15 +14,15 @@
     <light directional="true" pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
     <geom name="floor" type="plane" size="2 2 0.1" rgba="0.92 0.92 0.95 1.0"/>
 
-    <!-- Table Surface -->
-    <body name="table" pos="0.35 0 0.15">
-      <geom name="table_top" type="box" size="0.45 0.40 0.15" material="table_mat"/>
+    <!-- Table Surface (In front of robot base, x in [0.10, 0.80]) -->
+    <body name="table" pos="0.45 0 0.15">
+      <geom name="table_top" type="box" size="0.35 0.40 0.15" material="table_mat"/>
     </body>
 
     <!-- Manipulation Target: Red Cube -->
     <body name="red_cube" pos="0.45 -0.08 0.32">
       <freejoint/>
-      <geom name="cube_geom" type="box" size="0.0175 0.0175 0.0175" mass="0.080" material="cube_red"/>
+      <geom name="cube_geom" type="box" size="0.0175 0.0175 0.0175" mass="0.040" material="cube_red" friction="2.0 0.02 0.001" solref="0.01 1.0" solimp="0.9 0.95 0.001"/>
     </body>
 
     <!-- Target Placement Zone: Tray -->
@@ -33,8 +33,9 @@
     <!-- Overhead Camera -->
     <camera name="overhead_cam" pos="0.35 0 0.95" quat="0.7071 0 0 -0.7071" fovy="55"/>
 
-    <!-- PiPER Robotic Arm Base -->
-    <body name="base_link" pos="0 0 0.30">
+    <!-- PiPER Robotic Arm Base (Mounted on 100mm pedestal at z=0.40m) -->
+    <body name="base_link" pos="0 0 0.40">
+      <geom name="pedestal_geom" type="cylinder" size="0.070 0.05" pos="0 0 -0.05" material="dark_metal"/>
       <geom name="base_geom" type="cylinder" size="0.065 0.04" pos="0 0 0.04" material="dark_metal"/>
 
       <!-- Joint 1: Base Yaw [-2.618, 2.618] -->
@@ -75,13 +76,13 @@
                     <!-- Left Finger Prismatic [0, 0.035] -->
                     <body name="left_finger" pos="0 0.015 0.050">
                       <joint name="gripper_left" type="slide" axis="0 1 0" range="0.0 0.035" damping="0.1"/>
-                      <geom name="left_finger_geom" type="box" size="0.0075 0.004 0.020" pos="0 0 0.02" material="silver_metal"/>
+                      <geom name="left_finger_geom" type="box" size="0.0075 0.004 0.025" pos="0 0 0.025" material="silver_metal" friction="2.5 0.05 0.001" solref="0.01 1.0" solimp="0.9 0.95 0.001"/>
                     </body>
 
                     <!-- Right Finger Prismatic [0, 0.035] -->
                     <body name="right_finger" pos="0 -0.015 0.050">
                       <joint name="gripper_right" type="slide" axis="0 -1 0" range="0.0 0.035" damping="0.1"/>
-                      <geom name="right_finger_geom" type="box" size="0.0075 0.004 0.020" pos="0 0 0.02" material="silver_metal"/>
+                      <geom name="right_finger_geom" type="box" size="0.0075 0.004 0.025" pos="0 0 0.025" material="silver_metal" friction="2.5 0.05 0.001" solref="0.01 1.0" solimp="0.9 0.95 0.001"/>
                     </body>
 
                     <!-- Virtual TCP link -->
@@ -97,15 +98,22 @@
   </worldbody>
 
   <actuator>
-    <position name="act_j1" joint="joint1" kp="200" kv="20" ctrlrange="-2.618 2.618"/>
-    <position name="act_j2" joint="joint2" kp="200" kv="20" ctrlrange="0.0 3.14159"/>
-    <position name="act_j3" joint="joint3" kp="200" kv="20" ctrlrange="-2.967 0.0"/>
-    <position name="act_j4" joint="joint4" kp="150" kv="15" ctrlrange="-1.745 1.745"/>
-    <position name="act_j5" joint="joint5" kp="100" kv="10" ctrlrange="-1.222 1.222"/>
-    <position name="act_j6" joint="joint6" kp="80" kv="8" ctrlrange="-2.094 2.094"/>
-    <position name="act_gripper_l" joint="gripper_left" kp="100" kv="10" ctrlrange="0.0 0.035"/>
-    <position name="act_gripper_r" joint="gripper_right" kp="100" kv="10" ctrlrange="0.0 0.035"/>
+    <position name="act_j1" joint="joint1" kp="1500" kv="50" ctrlrange="-2.618 2.618"/>
+    <position name="act_j2" joint="joint2" kp="2500" kv="80" ctrlrange="0.0 3.14159"/>
+    <position name="act_j3" joint="joint3" kp="1800" kv="60" ctrlrange="-2.967 0.0"/>
+    <position name="act_j4" joint="joint4" kp="800" kv="30" ctrlrange="-1.745 1.745"/>
+    <position name="act_j5" joint="joint5" kp="600" kv="20" ctrlrange="-1.222 1.222"/>
+    <position name="act_j6" joint="joint6" kp="400" kv="15" ctrlrange="-2.094 2.094"/>
+    <position name="act_gripper_l" joint="gripper_left" kp="400" kv="40" ctrlrange="0.0 0.035"/>
+    <position name="act_gripper_r" joint="gripper_right" kp="400" kv="40" ctrlrange="0.0 0.035"/>
   </actuator>
+
+  <contact>
+    <exclude body1="link3" body2="link5"/>
+    <exclude body1="link4" body2="link6"/>
+    <exclude body1="left_finger" body2="gripper_base"/>
+    <exclude body1="right_finger" body2="gripper_base"/>
+  </contact>
 
   <sensor>
     <jointpos name="j1_pos" joint="joint1"/>

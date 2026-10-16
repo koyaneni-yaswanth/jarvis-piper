@@ -72,6 +72,13 @@ class MuJoCoPiPEREnv:
         self.step_count = 0
         self.viewer = None
 
+        self.grasped = False
+        self.grasp_offset = np.zeros(3, dtype=np.float64)
+        self.cube_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "red_cube")
+        self.tray_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "placement_tray")
+        self.base_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "base_link")
+        self.tcp_site_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "tcp_site")
+
         self.reset()
 
     def reset(self, seed: Optional[int] = None) -> Dict[str, Any]:
@@ -81,6 +88,8 @@ class MuJoCoPiPEREnv:
 
         mujoco.mj_resetData(self.model, self.data)
         self.step_count = 0
+        self.grasped = False
+        self.grasp_offset = np.zeros(3, dtype=np.float64)
 
         # Set arm joints to home posture
         for i, j_name in enumerate(self.JOINT_NAMES):
@@ -136,10 +145,31 @@ class MuJoCoPiPEREnv:
         for _ in range(self.substeps):
             mujoco.mj_step(self.model, self.data)
 
+        # Dynamic grasp tracking
+        if self.cube_body_id != -1 and self.tcp_site_id != -1:
+            tcp_pos_w = np.array(self.data.site_xpos[self.tcp_site_id])
+            c_pos_w = np.array(self.data.xpos[self.cube_body_id])
+            dist_tcp_cube = float(np.linalg.norm(tcp_pos_w - c_pos_w))
+
+            if not self.grasped and target_gripper_stroke < 0.015 and dist_tcp_cube < 0.075:
+                self.grasped = True
+                self.grasp_offset = c_pos_w - tcp_pos_w
+
+            if self.grasped and target_gripper_stroke > 0.025:
+                self.grasped = False
+
+            if self.grasped:
+                jnt_adr = self.model.body_jntadr[self.cube_body_id]
+                qadr = self.model.jnt_qposadr[jnt_adr]
+                self.data.qpos[qadr : qadr + 3] = self.data.site_xpos[self.tcp_site_id] + self.grasp_offset
+                dof_adr = self.model.body_dofadr[self.cube_body_id]
+                self.data.qvel[dof_adr : dof_adr + 6] = 0.0
+                mujoco.mj_forward(self.model, self.data)
+
         self.step_count += 1
         obs = self.get_observation()
 
-        # Check task metric: distance from TCP to red cube
+        # Check task metric: distance from TCP to red cube and cube to tray
         tcp_pos = np.array(obs["tcp_pose"]["position"])
         cube_pos = np.array(obs["cube_position"])
         dist_to_cube = float(np.linalg.norm(tcp_pos - cube_pos))
@@ -150,6 +180,8 @@ class MuJoCoPiPEREnv:
         info = {
             "step": self.step_count,
             "dist_to_cube_m": round(dist_to_cube, 4),
+            "dist_to_tray_m": obs["dist_to_tray_m"],
+            "grasped": self.grasped,
             "data_origin": "SIMULATION_MUJOCO",
         }
         return obs, reward, done, info
@@ -191,6 +223,9 @@ class MuJoCoPiPEREnv:
         grp_j_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, "gripper_left")
         gripper_stroke = float(self.data.qpos[self.model.jnt_qposadr[grp_j_id]] * 2.0) if grp_j_id != -1 else 0.0
 
+        tray_pos = self.data.xpos[self.tray_body_id].tolist() if self.tray_body_id != -1 else [0.42, 0.08, 0.301]
+        dist_to_tray = float(np.linalg.norm(np.array(cube_pos[:2]) - np.array(tray_pos[:2])))
+
         return {
             "joint_positions": [round(x, 5) for x in q_cur],
             "joint_velocities": [round(v, 5) for v in v_cur],
@@ -200,6 +235,9 @@ class MuJoCoPiPEREnv:
             },
             "gripper_stroke": round(gripper_stroke, 5),
             "cube_position": [round(x, 5) for x in cube_pos],
+            "tray_position": [round(x, 5) for x in tray_pos],
+            "grasped": bool(self.grasped),
+            "dist_to_tray_m": round(dist_to_tray, 4),
             "sim_time": round(float(self.data.time), 4),
             "step_count": self.step_count,
             "data_origin": "SIMULATION_MUJOCO",

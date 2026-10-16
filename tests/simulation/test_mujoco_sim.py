@@ -102,3 +102,15 @@ def test_mujoco_episode_data_isolation(tmp_path):
     for r in loaded:
         assert r["data_origin"] == "SIMULATION_MUJOCO"
     env.close()
+
+
+@pytest.mark.skipif(not HAS_MUJOCO, reason="mujoco not installed")
+def test_mujoco_pick_and_place_execution():
+    """Verifies end-to-end pick-and-place task execution in MuJoCo physics."""
+    from tools.mujoco_sim import run_pick_and_place_episode
+    env = MuJoCoPiPEREnv()
+    res = run_pick_and_place_episode(env=env, seed=123, save_frames=False)
+    assert res["success"] is True
+    assert res["grasp_success"] is True
+    assert res["final_error_mm"] < 45.0
+    env.close()

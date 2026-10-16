@@ -1,0 +1,517 @@
+{
+  "task": "pick_place",
+  "policy": "nominal",
+  "total_trials": 20,
+  "grasp_success_count": 20,
+  "grasp_success_rate_pct": 100.0,
+  "placement_success_count": 20,
+  "placement_success_rate_pct": 100.0,
+  "mean_placement_error_mm": 23.24,
+  "std_placement_error_mm": 1.81,
+  "min_placement_error_mm": 21.0,
+  "max_placement_error_mm": 29.21,
+  "wall_clock_sec": 2.42,
+  "trials": [
+    {
+      "seed": 0,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 22.87,
+      "cube_initial_pos": [
+        0.452,
+        -0.0714,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3974,
+        0.0838,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5077.0
+    },
+    {
+      "seed": 1,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 23.55,
+      "cube_initial_pos": [
+        0.4467,
+        -0.0712,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3969,
+        0.0847,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5101.6
+    },
+    {
+      "seed": 2,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 22.53,
+      "cube_initial_pos": [
+        0.4474,
+        -0.099,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3979,
+        0.0846,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5168.1
+    },
+    {
+      "seed": 3,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 22.85,
+      "cube_initial_pos": [
+        0.452,
+        -0.0717,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3975,
+        0.0838,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5216.9
+    },
+    {
+      "seed": 4,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.78,
+      "cube_initial_pos": [
+        0.4687,
+        -0.0781,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3983,
+        0.0817,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5161.8
+    },
+    {
+      "seed": 5,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 24.44,
+      "cube_initial_pos": [
+        0.4389,
+        -0.0652,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3962,
+        0.0854,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5116.0
+    },
+    {
+      "seed": 6,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.17,
+      "cube_initial_pos": [
+        0.4657,
+        -0.0867,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3989,
+        0.0819,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5099.5
+    },
+    {
+      "seed": 7,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 24.72,
+      "cube_initial_pos": [
+        0.4331,
+        -0.0688,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3959,
+        0.0855,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5160.9
+    },
+    {
+      "seed": 8,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.66,
+      "cube_initial_pos": [
+        0.4649,
+        -0.0613,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3985,
+        0.0829,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.034,
+      "steps_per_sec": 5346.5
+    },
+    {
+      "seed": 9,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 29.21,
+      "cube_initial_pos": [
+        0.4304,
+        -0.0799,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3927,
+        0.0905,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5171.4
+    },
+    {
+      "seed": 10,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.49,
+      "cube_initial_pos": [
+        0.4609,
+        -0.0992,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3987,
+        0.0831,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5191.3
+    },
+    {
+      "seed": 11,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 23.72,
+      "cube_initial_pos": [
+        0.4372,
+        -0.0992,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3969,
+        0.0854,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5133.5
+    },
+    {
+      "seed": 12,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 24.65,
+      "cube_initial_pos": [
+        0.4362,
+        -0.0704,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.396,
+        0.0854,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.037,
+      "steps_per_sec": 4913.1
+    },
+    {
+      "seed": 13,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.61,
+      "cube_initial_pos": [
+        0.4611,
+        -0.0905,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3987,
+        0.0835,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.034,
+      "steps_per_sec": 5274.6
+    },
+    {
+      "seed": 14,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 22.93,
+      "cube_initial_pos": [
+        0.4506,
+        -0.0691,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3974,
+        0.0838,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.036,
+      "steps_per_sec": 5041.2
+    },
+    {
+      "seed": 15,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 21.0,
+      "cube_initial_pos": [
+        0.464,
+        -0.0928,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3991,
+        0.0816,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.034,
+      "steps_per_sec": 5321.7
+    },
+    {
+      "seed": 16,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 23.66,
+      "cube_initial_pos": [
+        0.4389,
+        -0.0791,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3968,
+        0.0845,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.036,
+      "steps_per_sec": 4952.3
+    },
+    {
+      "seed": 17,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 23.88,
+      "cube_initial_pos": [
+        0.4418,
+        -0.0788,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3966,
+        0.0847,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5070.6
+    },
+    {
+      "seed": 18,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 22.45,
+      "cube_initial_pos": [
+        0.456,
+        -0.0798,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3979,
+        0.0842,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.035,
+      "steps_per_sec": 5194.9
+    },
+    {
+      "seed": 19,
+      "success": true,
+      "grasp_success": true,
+      "final_error_mm": 24.73,
+      "cube_initial_pos": [
+        0.4339,
+        -0.0696,
+        0.32
+      ],
+      "cube_final_pos": [
+        0.3959,
+        0.0853,
+        0.2994
+      ],
+      "tray_pos": [
+        0.42,
+        0.08,
+        0.301
+      ],
+      "total_sim_steps": 180,
+      "sim_duration_s": 3.6,
+      "wall_duration_s": 0.036,
+      "steps_per_sec": 5042.3
+    }
+  ],
+  "timestamp": "2026-10-16T18:08:04Z"
+}
