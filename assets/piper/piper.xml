@@ -1,0 +1,120 @@
+<mujoco model="piper">
+  <compiler angle="radian" coordinate="local" autolimits="true"/>
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81"/>
+
+  <asset>
+    <material name="table_mat" rgba="0.85 0.85 0.82 1.0" specular="0.1" roughness="0.8"/>
+    <material name="dark_metal" rgba="0.22 0.22 0.25 1.0" specular="0.6" roughness="0.3"/>
+    <material name="silver_metal" rgba="0.78 0.80 0.83 1.0" specular="0.8" roughness="0.2"/>
+    <material name="cube_red" rgba="0.85 0.15 0.15 1.0" specular="0.3" roughness="0.4"/>
+    <material name="tray_mat" rgba="0.2 0.5 0.8 0.6" specular="0.2" roughness="0.5"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true" pos="0 0 3" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
+    <geom name="floor" type="plane" size="2 2 0.1" rgba="0.92 0.92 0.95 1.0"/>
+
+    <!-- Table Surface -->
+    <body name="table" pos="0.35 0 0.15">
+      <geom name="table_top" type="box" size="0.45 0.40 0.15" material="table_mat"/>
+    </body>
+
+    <!-- Manipulation Target: Red Cube -->
+    <body name="red_cube" pos="0.45 -0.08 0.32">
+      <freejoint/>
+      <geom name="cube_geom" type="box" size="0.0175 0.0175 0.0175" mass="0.080" material="cube_red"/>
+    </body>
+
+    <!-- Target Placement Zone: Tray -->
+    <body name="placement_tray" pos="0.42 0.08 0.301">
+      <geom name="tray_bottom" type="cylinder" size="0.08 0.002" material="tray_mat"/>
+    </body>
+
+    <!-- Overhead Camera -->
+    <camera name="overhead_cam" pos="0.35 0 0.95" quat="0.7071 0 0 -0.7071" fovy="55"/>
+
+    <!-- PiPER Robotic Arm Base -->
+    <body name="base_link" pos="0 0 0.30">
+      <geom name="base_geom" type="cylinder" size="0.065 0.04" pos="0 0 0.04" material="dark_metal"/>
+
+      <!-- Joint 1: Base Yaw [-2.618, 2.618] -->
+      <body name="link1" pos="0 0 0.088">
+        <joint name="joint1" type="hinge" axis="0 0 1" range="-2.618 2.618" damping="0.5"/>
+        <geom name="link1_geom" type="cylinder" size="0.05 0.035" pos="0 0 0.035" material="silver_metal"/>
+
+        <!-- Joint 2: Shoulder Pitch [0, 3.14159] -->
+        <body name="link2" pos="0 0 0.070" quat="0.7071068 0.7071068 0 0">
+          <joint name="joint2" type="hinge" axis="0 0 1" range="0.0 3.14159" damping="0.5"/>
+          <geom name="link2_geom" type="capsule" size="0.04 0.13" pos="0.130 0 0" quat="0.7071068 0 0.7071068 0" material="dark_metal"/>
+
+          <!-- Joint 3: Elbow Pitch [-2.967, 0] -->
+          <body name="link3" pos="0.260 0 0">
+            <joint name="joint3" type="hinge" axis="0 0 1" range="-2.967 0.0" damping="0.5"/>
+            <geom name="link3_geom" type="capsule" size="0.035 0.125" pos="0.125 0 0" quat="0.7071068 0 0.7071068 0" material="silver_metal"/>
+
+            <!-- Joint 4: Forearm Roll [-1.745, 1.745] -->
+            <body name="link4" pos="0.250 0 0" quat="0.7071068 -0.7071068 0 0">
+              <joint name="joint4" type="hinge" axis="0 0 1" range="-1.745 1.745" damping="0.3"/>
+              <geom name="link4_geom" type="cylinder" size="0.035 0.03" pos="0 0 0.03" material="dark_metal"/>
+
+              <!-- Joint 5: Wrist Pitch [-1.222, 1.222] -->
+              <body name="link5" pos="0 0 0.060" quat="0.7071068 0.7071068 0 0">
+                <joint name="joint5" type="hinge" axis="0 0 1" range="-1.222 1.222" damping="0.3"/>
+                <geom name="link5_geom" type="cylinder" size="0.03 0.025" pos="0 0 0.025" material="silver_metal"/>
+
+                <!-- Joint 6: Wrist Roll [-2.094, 2.094] -->
+                <body name="link6" pos="0 0 0.050" quat="0.7071068 -0.7071068 0 0">
+                  <joint name="joint6" type="hinge" axis="0 0 1" range="-2.094 2.094" damping="0.2"/>
+                  <geom name="link6_geom" type="cylinder" size="0.028 0.015" pos="0 0 0.015" material="dark_metal"/>
+
+                  <!-- Gripper Base & Wrist Camera -->
+                  <body name="gripper_base" pos="0 0 0.030">
+                    <geom name="gripper_base_geom" type="box" size="0.025 0.035 0.025" pos="0 0 0.025" material="dark_metal"/>
+                    <camera name="wrist_camera" pos="0.035 0 0.045" quat="0.9914 0 -0.1305 0" fovy="60"/>
+
+                    <!-- Left Finger Prismatic [0, 0.035] -->
+                    <body name="left_finger" pos="0 0.015 0.050">
+                      <joint name="gripper_left" type="slide" axis="0 1 0" range="0.0 0.035" damping="0.1"/>
+                      <geom name="left_finger_geom" type="box" size="0.0075 0.004 0.020" pos="0 0 0.02" material="silver_metal"/>
+                    </body>
+
+                    <!-- Right Finger Prismatic [0, 0.035] -->
+                    <body name="right_finger" pos="0 -0.015 0.050">
+                      <joint name="gripper_right" type="slide" axis="0 -1 0" range="0.0 0.035" damping="0.1"/>
+                      <geom name="right_finger_geom" type="box" size="0.0075 0.004 0.020" pos="0 0 0.02" material="silver_metal"/>
+                    </body>
+
+                    <!-- Virtual TCP link -->
+                    <site name="tcp_site" pos="0 0 0.090" size="0.005" rgba="0 1 0 1"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="act_j1" joint="joint1" kp="200" kv="20" ctrlrange="-2.618 2.618"/>
+    <position name="act_j2" joint="joint2" kp="200" kv="20" ctrlrange="0.0 3.14159"/>
+    <position name="act_j3" joint="joint3" kp="200" kv="20" ctrlrange="-2.967 0.0"/>
+    <position name="act_j4" joint="joint4" kp="150" kv="15" ctrlrange="-1.745 1.745"/>
+    <position name="act_j5" joint="joint5" kp="100" kv="10" ctrlrange="-1.222 1.222"/>
+    <position name="act_j6" joint="joint6" kp="80" kv="8" ctrlrange="-2.094 2.094"/>
+    <position name="act_gripper_l" joint="gripper_left" kp="100" kv="10" ctrlrange="0.0 0.035"/>
+    <position name="act_gripper_r" joint="gripper_right" kp="100" kv="10" ctrlrange="0.0 0.035"/>
+  </actuator>
+
+  <sensor>
+    <jointpos name="j1_pos" joint="joint1"/>
+    <jointpos name="j2_pos" joint="joint2"/>
+    <jointpos name="j3_pos" joint="joint3"/>
+    <jointpos name="j4_pos" joint="joint4"/>
+    <jointpos name="j5_pos" joint="joint5"/>
+    <jointpos name="j6_pos" joint="joint6"/>
+    <jointpos name="gripper_pos" joint="gripper_left"/>
+    <framepos name="tcp_pos" objtype="site" objname="tcp_site"/>
+  </sensor>
+</mujoco>
