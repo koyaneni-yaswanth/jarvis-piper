@@ -1,6 +1,6 @@
 # JARVIS-PiPER: Hardware Readiness & Preflight Validation Report
 
-**Date:** October 15, 2026  
+**Date:** October 16, 2026  
 **Auditor:** Principal Robotics Architect & Safety Officer  
 **Host Target:** `humble-NUC14RVS-B` (Ubuntu 22.04.5 LTS / Intel NUC 14)  
 **Safety Protocol Active:** `HARDWARE_READ_ONLY` / `MOCK` (Zero uncommanded physical motion)
@@ -11,14 +11,13 @@
 
 | Subsystem | Physical Device Model | Bus Topology & Node | USB VID:PID | Link State / Status | Readiness Classification |
 | :--- | :--- | :--- | :---: | :---: | :---: |
-| **Manipulator Bus** | OpenMoko Geschwister Schneider CAN Adapter | USB Bus 1, Dev 2 (`can0`) | `1d50:606f` | `DOWN` (1,000,000 bps) | **VERIFIED (Unactuated)** |
-| **Robotic Arm** | AgileX PiPER 6-DOF Robotic Manipulator | CAN link via `can0` | — | Power Disarmed | **BLOCKED (Requires E-Stop Auth)** |
-| **Tracking Dongle** | Valve Software Watchman Receiver Dongle | USB Bus 1, Dev 4 | `28de:2101` | Active | **VERIFIED** |
-| **Spatial Tracker** | AgileX PIKA Sense 6-DOF Handheld Tracker | USB Bus 1, Dev 11 (LHR) | `28de:2300` | Active | **VERIFIED** |
-| **Auxiliary Serial** | QinHeng CH341 USB-to-Serial Converter | `/dev/ttyUSB0` (`/dev/ttyUSB50`) | `1a86:7522` | Bound (dialout) | **VERIFIED** |
-| **Base Stations** | 2x HTC Vive Lighthouse Optical Stations | Free-space infrared tracking | — | Operational in room | **VERIFIED** |
-| **Wrist Camera** | Intel RealSense D405 Sub-Millimeter Depth | `/dev/video2`–`/dev/video7`, `media1` | `8086:0b5b` | Udev bound | **VERIFIED** |
-| **Overhead Camera**| Sunplus DECXIN USB RGB Camera | `/dev/video0`, `/dev/video1` (`video50`) | `1bcf:2cd1` | Udev bound | **VERIFIED** |
+| **Manipulator Bus** | OpenMoko Geschwister Schneider CAN Adapter | USB Bus 3, Dev 2 (`can0`) | `1d50:606f` | `UP` (1,000,000 bps) | **VERIFIED (Passive Telemetry Active)** |
+| **Robotic Arm** | AgileX PiPER 6-DOF Robotic Manipulator | CAN link via `can0` | — | Normal Standby (`0x0`), Motors Unenabled | **VERIFIED (Read-Only Telemetry)** |
+| **Tracking Dongle** | Valve Software Watchman Receiver Dongle | USB Bus 3, Dev 4 & 11 | `28de:2101` / `28de:2300` | Active (pysurvive bound) | **VERIFIED** |
+| **Spatial Tracker** | AgileX PIKA Sense 6-DOF Handheld Tracker | USB Bus 3, Dev 10 (CH341) | `1a86:7522` | `/dev/ttyUSB0` Active | **VERIFIED** |
+| **Base Stations** | 2x HTC Vive Lighthouse Optical Stations | Free-space infrared tracking | — | LH0 & LH1 Discovered | **VERIFIED** |
+| **Wrist Camera** | Intel RealSense D405 Sub-Millimeter Depth | USB Bus 3, Dev 8 | `8086:0b5b` | 640x480 RGB + 16-bit Depth @ 30 FPS | **VERIFIED ON HARDWARE** |
+| **Overhead Camera**| Sunplus DECXIN USB RGB Camera | USB Bus 3, Dev 7 (`/dev/video0`) | `1bcf:2cd1` | 640x480 MJPG @ 30 FPS | **VERIFIED ON HARDWARE** |
 | **Gripper Tool** | PIKA Linear Stroke Gripper (0–35 mm) | Integrated mechanical interface | — | Calibrated in dataset | **VERIFIED** |
 
 ---
@@ -26,30 +25,55 @@
 ## 2. Sensor & Interface Verification Findings
 
 ### 2.1 Optical Tracking Subsystem (PIKA Sense & Stations)
-- **Tracking Frequency:** 160 Hz nominal pose stream verified in recorded episodes (`/pika/pose`).
-- **Coordinate Conventions:** FLU (Forward-Left-Up) at tracker center.
-- **Quaternion Verification:** Quaternions are stored as $[qx, qy, qz, qw]$ and maintain strict unit norm ($\|q\| = 1.0000 \pm 10^{-6}$).
-- **Safety Interlocks:** Tracking age watchdog enforces disarm if pose freshness exceeds $50.0\,\text{ms}$. Identity transform rejection prevents uncalibrated base-station initialization.
+- **Tracking Link:** Connected over serial `/dev/ttyUSB0` using `pika.sense`.
+- **Lighthouse Discovery:** Both base stations (`LH0`, `LH1`) detected and synchronized via `pysurvive`.
+- **Controller Telemetry:** Handheld encoder reading `98.9°` (`1.73 rad`), gripper distance `99.44 mm`, trigger state `0`.
+- **Watchman Dongle:** Vive Tracker `T20` recognized with watchman firmware `1592875850` and FPGA `538/7/2`.
 
-### 2.2 Vision Perception Subsystem
-- **Intel RealSense D405:**
-  - Streams: Color RGB (640x480 @ 30 FPS) + Depth Z16 (640x480 @ 30 FPS).
-  - Depth Scale: Queried from device metadata as $0.00009999999747378752\,\text{m/unit}$ ($100\,\mu\text{m}$ per count). Sub-millimeter near-field fidelity confirmed.
-  - Saturated Pixels: Value `65535` strictly mapped to invalid/infinite background.
-- **DECXIN Overhead Camera:**
-  - Node: `/dev/video0` and `/dev/video1` (aliased to `/dev/video50` via udev rule).
-  - Streams: 640x480 MJPG/YUYV @ 30 FPS wide-angle context view.
+### 2.2 Vision Perception Subsystem & USB Bandwidth Resolution
+- **Intel RealSense D405 (SN: 260322272358):**
+  - Streams: 640x480 BGR8 color + 640x480 Z16 depth at 30 FPS.
+  - Integration: `pyrealsense2` pipeline with synchronized `wait_for_frames(200)` pacing.
+  - Depth Metrics: Verified 16-bit uint16 lossless PNG format with 64.04% valid non-zero return in workspace.
+- **DECXIN Overhead Camera (`/dev/video0`):**
+  - Resolution: 640x480 at 30 FPS.
+  - Bus Bandwidth Resolution: Configured with `cv2.CAP_PROP_FOURCC = cv2.VideoWriter_fourcc(*"MJPG")` to prevent USB 2.0 480 Mbps bus saturation when sharing the same root hub with the RealSense D405 and PIKA serial controller.
 
 ### 2.3 PiPER Manipulator Control Gateway
-- **CAN Protocol:** SocketCAN `can0` configured for 1 Mbps (`bitrate 1000000`).
-- **Motor Enable Gating:** S-V1.6-3 firmware requires explicit service call `piper_msgs/srv/Enable` with `enable_request = True`.
-- **Current Bus State:** Interface `can0` is currently `DOWN`. Motor power remains disconnected.
+- **CAN Protocol:** SocketCAN `can0` active at 1 Mbps bitrate.
+- **Broadcast Frames:** Continuous CAN packets confirmed via `candump can0`:
+  - Joint positions & status: `0x251`–`0x256`
+  - Gripper & end-effector: `0x261`–`0x266`
+  - High-rate telemetry: `0x2A1`–`0x2A8`
+- **Passive Read-Only Access:** Connected via `piper_sdk.C_PiperInterface_V2('can0')` with `can_init=False, piper_init=False`. Motors are NOT enabled; arm status remains disarmed `NORMAL(0x0)`.
 
 ---
 
-## 3. Operating Modes & Enforcement Architecture
+## 3. Real-Time Hardware Observation & Recording Pipeline
 
-The system supports 6 distinct, mutually exclusive operational modes:
+JARVIS-PiPER now features a complete, verified physical observation recording, auditing, and replay pipeline:
+
+| Component | Path | Function | Hardware Verification |
+| :--- | :--- | :--- | :--- |
+| **Observation Recorder** | `jarvis/live_recorder.py` | Passively records synchronized multi-stream telemetry to disk. | **VERIFIED ON HARDWARE** |
+| **Recording CLI** | `tools/live_record.py` | CLI front-end for operator-supervised live sessions. | **VERIFIED ON HARDWARE** |
+| **Integrity Validator** | `tools/live_validate.py` | Rigorous validator checking monotonic timestamps, dt jitter, depth, and decodability. | **VERIFIED ON HARDWARE** |
+| **Replay & HDF5 Exporter** | `tools/live_replay.py` | Replays recorded telemetry offline and exports canonical HDF5 datasets. | **VERIFIED ON HARDWARE** |
+
+### Verified Hardware Test Session (`live_obs_20261016_155251`)
+- **Duration:** 10.026 s
+- **Effective Acquisition Rate:** 28.52 Hz (target: 30.0 Hz)
+- **Sample Count:** Exactly 286 samples captured across **all 4 hardware streams** with 0 dropped frames:
+  - PiPER CAN: 286 telemetry records
+  - RealSense D405: 286 color JPEGs + 286 depth PNGs (16-bit uint16)
+  - DECXIN Camera: 286 overhead color JPEGs
+  - PIKA Sense: 286 controller records
+- **Validation Outcome:** Certified **PASS** with zero errors (`data/recordings/live_obs_20261016_155251/audit_report.json`).
+- **HDF5 Canonical Dataset:** `data/recordings/live_obs_20261016_155251/session.h5` verified containing complete observation arrays and metadata.
+
+---
+
+## 4. Operating Modes & Safety Architecture
 
 ```
 [MOCK] ------------> Default startup mode. All hardware actuation strictly mocked.
@@ -60,42 +84,4 @@ The system supports 6 distinct, mutually exclusive operational modes:
 [HARDWARE_SUPERVISED] Actuates physical arm under operator presence, token, and E-Stop.
 ```
 
-Transition to `HARDWARE_SUPERVISED` is strictly prevented unless:
-1. Operator token `"ENABLE MOTION"` is provided.
-2. Hardware preflight diagnostics pass with zero critical errors.
-3. The Independent Safety Supervisor confirms joint and workspace bounds.
-4. An on-site human operator is present with physical emergency stop in hand.
-
----
-
-## 4. Formal Physical Testing Approval Request (Per Safety Policy Rule 18)
-
-Before the first physical movement of the AgileX PiPER arm can be initiated, the following test plan is submitted for explicit operator review and authorization:
-
-### 4.1 Proposed Test Specification
-- **Test Identifier:** `PHYSICAL-TEST-001-SUPERVISED-NUDGE`
-- **Initial Robot State:** Arm stationary, clear of table and obstacles. Hand on physical E-stop.
-- **Initial Joint Angles:** $\mathbf{q}_0 = [0.0, 0.5236, -0.5236, 0.0, 0.0, 0.0]\,\text{rad}$ (nominal home clearance pose).
-- **Proposed Motion:** Low-risk, single-axis vertical Cartesian nudge: $\Delta Z = +0.020\,\text{m}$ (+20 mm) at conservative speed (10% of maximum speed rate, $\le 0.05\,\text{m/s}$).
-- **Expected Duration:** 3.0 seconds total motion, followed by stationary hold.
-- **Validated Safety Limits:**
-  - Maximum Cartesian step: $\le 0.010\,\text{m}$ per control cycle.
-  - Joint velocity limit: $\le 0.5\,\text{rad/s}$ (conservative preflight clamp).
-  - Workspace Box: $X \in [0.10, 0.55]$, $Y \in [-0.35, 0.35]$, $Z \in [0.05, 0.50]\,\text{m}$.
-- **Emergency Stop Procedure:**
-  1. Primary: Operator depresses physical hardware emergency stop button on PiPER base.
-  2. Secondary: Software watchdog drops CAN heartbeat on `Ctrl+C` or communication loss ($>100\,\text{ms}$), executing `piper.DisableArm(7)`.
-- **Operator Required Actions to Authorize:**
-  1. Confirm physical workspace is completely clear of personnel and unanchored tools.
-  2. Confirm physical E-stop button is connected and held.
-  3. Execute:
-     ```bash
-     sudo ip link set can0 type can bitrate 1000000
-     sudo ip link set can0 up
-     ```
-  4. Run operator-supervised test command:
-     ```bash
-     python3 -m jarvis.cli policy --execute --steps 20
-     ```
-
-*Until the operator confirms readiness and brings up `can0`, all physical actuation remains locked in `MOCK` and `HARDWARE_READ_ONLY` mode.*
+Transition to `HARDWARE_SUPERVISED` requires explicit operator token authorization (`"ENABLE MOTION"`), active E-stop in hand, and passing all preflight boundary checks.

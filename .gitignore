@@ -60,7 +60,7 @@ models/exported/*
 experiments/logs/
 experiments/results/
 logs/
-data/
+/data/
 *.log
 .pytest_cache/
 .coverage

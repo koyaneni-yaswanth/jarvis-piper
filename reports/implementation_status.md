@@ -1,9 +1,9 @@
 # JARVIS-PiPER: Implementation Status & Definition of Done
 
-**Date:** October 15, 2026  
+**Date:** October 16, 2026  
 **Auditor:** Principal Robotics Architect & Verification Lead  
 **Host Target:** `humble-NUC14RVS-B` (Intel NUC 14, Ubuntu 22.04 LTS, ROS 2 Humble)  
-**Status:** 163/163 Automated Tests Passing (0 Failed, 2 Skipped)  
+**Status:** 170/170 Automated Tests Passing (0 Failed, 2 Skipped)  
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Item | Status | Verification Evidence / File Path | Empirical Notes |
 | :--- | :---: | :--- | :--- |
-| **Actual machine and repository audited** | **PASS** | `reports/audit/environment.md`, `reports/audit/hardware_inventory.json` | NUC 14, Intel Ultra 5 125H, 14GB RAM, 168GB free NVMe. Clean git state at `fecfb4a`. |
-| **Dependency incompatibilities diagnosed & isolated** | **PASS** | `reports/audit/dependency_report.md` | Modern NumPy/SciPy in `.venv`, PyTorch 2.14.1+cu130 linked via `.pth`, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` isolating ROS 2 plugins. |
+| **Actual machine and repository audited** | **PASS** | `reports/audit/environment.md`, `reports/audit/hardware_inventory.json` | NUC 14, Intel Ultra 5 125H, 14GB RAM, 168GB free NVMe. Clean git state. |
+| **Dependency incompatibilities diagnosed & isolated** | **PASS** | `reports/audit/dependency_report.md` | Modern NumPy/SciPy in `.venv`, PyTorch 2.14.1+cu130 linked via `.pth`, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` isolating ROS 2 plugins; `miniconda3/envs/pika` for pyrealsense2/pika_sdk. |
 | **Existing PiPER driver baseline verified** | **PASS** | `robot_adapters/piper/piper_adapter.py`, `piper_ros` | S-V1.6-3 limits, 1 Mbps CAN protocol (`can0`), and URDF kinematic frame verified. |
 | **Genuine joint feedback distinguished from commands** | **PASS** | `reports/audit/ros_interfaces.md`, `piper_adapter.py` | Sourced interfaces: `/piper/joint_states` (CAN encoder) vs `/piper/arm_controller/commands`. |
 | **Hardware-free mock tests pass** | **PASS** | `tests/unit/test_adapters.py`, `tests/simulation/test_sim_smoke.py` | Full test suite passes without requiring physical hardware connected. |
@@ -20,6 +20,10 @@
 | **Teleoperation interlocks validated** | **PASS** | `jarvis/teleop.py`, `tests/safety/test_safety_supervisor.py` | Dead-man clutch, tracking staleness watchdog (<50ms), and boundary clamping verified. |
 | **Dataset recorder implemented** | **PASS** | `data/recording/recorder.py`, `jarvis/record.py` | Multi-stream recorder capturing joints, video, depth, and JSONL journals. |
 | **Dataset schema & quality validator implemented** | **PASS** | `data/validation/validator.py`, `tests/data/test_dataset_pipeline.py` | Validates schema, monotonic timestamps, NaN/Inf absence, jerk, and jitter. |
+| **Real-time multi-stream live hardware recorder** | **PASS** | `jarvis/live_recorder.py`, `tools/live_record.py` | Passively captures synchronized telemetry from PiPER CAN (`can0`), RealSense D405 (RGB + 16-bit depth), DECXIN overhead camera (MJPG), and PIKA Sense without motor actuation. |
+| **Live observation session validator** | **PASS** | `tools/live_validate.py`, `tests/data/test_live_recorder.py` | Comprehensive session auditor checking metadata, monotonic timestamps, dt jitter, depth scale/ranges, image decodability, and joint health. |
+| **Live observation replay & HDF5 export** | **PASS** | `tools/live_replay.py` | Offline playback analysis and export tool converting raw multi-stream recordings into canonical HDF5 datasets. |
+| **First physical multi-stream live recording verified on hardware** | **PASS** | `data/recordings/live_obs_20261016_155251/` | **VERIFIED ON PHYSICAL HARDWARE**: 10.026s @ 28.52 Hz. Captured exactly 286 samples across all 4 physical streams (PiPER joint telemetry, RealSense 640x480 RGB + 16-bit depth, DECXIN 640x480 RGB, PIKA Sense controller). Certified PASS by `live_validate.py` and exported to `session.h5`. |
 | **Existing data inventoried without destruction** | **PASS** | `reports/audit/data_inventory.md` | 20 real MCAP episodes (2.1 GB) and `episode_0003.hdf5` (356 MB) verified in `/home/humble/pika_mgat_files/`. |
 | **PiPER simulation model & gripper validated** | **PASS** | `assets/piper/piper.urdf`, `tests/simulation/test_sim_smoke.py` | URDF matches CAD geometry; parallel gripper operates $[0.0, 0.035]\,\text{m}$ stroke. |
 | **Conventional pick-and-place baseline works** | **PASS** | `task_planning/pick_and_place.py`, `policies/baseline_scripted.py` | 100% success rate across held-out seeds with $<0.1\,\text{mm}$ placement error. |
@@ -38,7 +42,7 @@
 | **Kinematics bridge & policy execution** | **PASS** | `jarvis/policy.py`, `jarvis/cli.py` | Analytical `PiperKinematics` FK and numerical DLS IK integrated with relative delta mapping. Closed-loop rollout verified for ACT, BC, and Mock models (30/30 nominal steps, 0 anomalies). |
 | **Natural-language VLM task planner** | **PASS** | `jarvis/vlm.py`, `jarvis_piper/tasks/vlm_planner.py` | Generates auditable task step sequences with perception execution and automatic safety gating on physical hardware steps. |
 | **Task success is independently verified** | **PASS** | `task_planning/pick_and_place.py` | Physical geometry check: distance to tray $<0.03\,\text{m}$ with cube gripped. |
-| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **163 passed, 2 skipped, 0 failed in 7.96s**. |
+| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **170 passed, 2 skipped, 0 failed in 8.11s**. |
 | **Test results & known limitations documented** | **PASS** | `reports/final_validation_report.md`, `reports/project_status.md` | Comprehensive evidence-backed status documentation. |
 
 ---
@@ -54,10 +58,26 @@ Output:
 ```text
 ================================================================================
  [PASS] All NUC software tests passed cleanly!
-================== 163 passed, 2 skipped, 2 warnings in 7.96s ==================
+================== 170 passed, 2 skipped, 2 warnings in 8.11s ==================
 ```
-- **Total Tests Collected:** 165
-- **Passed:** 163
+- **Total Tests Collected:** 172
+- **Passed:** 170
 - **Skipped:** 2 (optional online HuggingFace weight downloads for CLIP/BLIP)
 - **Failed:** 0
 - **Regression Status:** 100% clean baseline.
+
+---
+
+## 3. Physical Live Observation Session Evidence
+
+- **Session Directory:** `data/recordings/live_obs_20261016_155251/`
+- **Audit Report:** `data/recordings/live_obs_20261016_155251/audit_report.json`
+- **HDF5 Canonical Dataset:** `data/recordings/live_obs_20261016_155251/session.h5`
+- **Duration & Rate:** 10.026 seconds, 28.52 Hz effective acquisition rate.
+- **Synchronized Streams:**
+  1. `robot_telemetry`: 286 samples, 6 joints read via SocketCAN `can0` in passive monitor mode (`NORMAL(0x0)`).
+  2. `wrist_color`: 286 frames (640x480 BGR8) from Intel RealSense D405 (SN `260322272358`).
+  3. `wrist_depth`: 286 frames (640x480 uint16 lossless mm) from Intel RealSense D405 (64.04% non-zero valid depth).
+  4. `overhead_color`: 286 frames (640x480 BGR8) from DECXIN UVC (`/dev/video0`) using hardware MJPG decoding.
+  5. `pika_sense`: 286 samples (encoder angle `98.9°`, gripper distance `99.44 mm`, trigger state `0`, 2 Lighthouse stations `LH0`, `LH1`).
+- **Data Integrity:** Zero missing files, strictly monotonic timestamps (`dt_s = 0.03506 ± 0.029 s`), zero corrupted frames.
