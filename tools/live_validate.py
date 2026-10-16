@@ -228,6 +228,17 @@ def validate_recording_session(session_dir: str | Path) -> Dict[str, Any]:
                 report["metrics"]["overhead_color_shape"] = list(oh_img.shape)
 
     # Robot Joint Statistics
+    has_actions = False
+    action_records = []
+    hw_ts_diffs = []
+
+    for r in records:
+        if "action" in r and r["action"] is not None:
+            has_actions = True
+            action_records.append(r["action"])
+        if "wrist_color_hw_time_ms" in r and "wrist_depth_hw_time_ms" in r:
+            hw_ts_diffs.append(abs(r["wrist_color_hw_time_ms"] - r["wrist_depth_hw_time_ms"]))
+
     if has_robot and len(robot_joint_positions) > 0:
         q_arr = np.array(robot_joint_positions)
         report["metrics"]["robot_samples"] = len(robot_joint_positions)
@@ -235,12 +246,30 @@ def validate_recording_session(session_dir: str | Path) -> Dict[str, Any]:
         report["metrics"]["joint_max_rad"] = [round(float(v), 4) for v in np.max(q_arr, axis=0)]
         report["metrics"]["joint_mean_rad"] = [round(float(v), 4) for v in np.mean(q_arr, axis=0)]
 
+        # Check velocities and efforts if present
+        vels = [r["joint_velocities"] for r in records if "joint_velocities" in r]
+        if vels:
+            v_arr = np.array(vels)
+            report["metrics"]["joint_max_velocity_rad_s"] = [round(float(v), 4) for v in np.max(np.abs(v_arr), axis=0)]
+        efforts = [r["joint_efforts"] for r in records if "joint_efforts" in r]
+        if efforts:
+            e_arr = np.array(efforts)
+            report["metrics"]["joint_max_effort_nm"] = [round(float(e), 4) for e in np.max(np.abs(e_arr), axis=0)]
+
+    if hw_ts_diffs:
+        report["metrics"]["camera_hw_sync_diff_max_ms"] = round(float(np.max(hw_ts_diffs)), 3)
+        report["metrics"]["camera_hw_sync_diff_mean_ms"] = round(float(np.mean(hw_ts_diffs)), 3)
+
+    if has_actions:
+        report["metrics"]["action_samples"] = len(action_records)
+
     report["streams_verified"] = {
         "robot_telemetry": has_robot,
         "realsense_wrist_color": has_rs_color,
         "realsense_wrist_depth": has_rs_depth,
         "overhead_camera": has_overhead,
         "pika_sense": has_pika,
+        "operator_actions": has_actions,
     }
 
     # Final verdict

@@ -273,3 +273,37 @@ def test_live_recorder_mock_record_session(tmp_path):
     assert report["valid"] is True
     assert report["streams_verified"]["robot_telemetry"] is True
     assert report["metrics"]["total_steps"] >= 3
+
+
+def test_live_recorder_with_action_provider(tmp_path):
+    """Ensures LiveObservationRecorder correctly logs operator actions from action provider."""
+    mock_action_provider = MagicMock()
+    mock_action_provider.get_latest_action.return_value = {
+        "type": "cartesian_target",
+        "values": [0.35, 0.05, 0.20, 0.0, 0.0, 0.0, 1.0],
+        "gripper_stroke_m": 0.030,
+        "source": "pika_teleop",
+    }
+
+    recorder = LiveObservationRecorder(
+        output_dir=str(tmp_path),
+        target_control_hz=50.0,
+        realsense_enabled=False,
+        overhead_camera_index=None,
+        pika_enabled=False,
+        action_provider=mock_action_provider,
+    )
+
+    session_dir = recorder.record_session(
+        duration_seconds=0.1,
+        task_description="Action logging test",
+        episode_mode=True,
+        task_name="pick_cube",
+    )
+    assert session_dir.is_dir()
+    assert "pick_cube" in str(session_dir)
+
+    report = validate_recording_session(session_dir)
+    assert report["valid"] is True
+    assert report["streams_verified"]["operator_actions"] is True
+    assert report["metrics"]["action_samples"] >= 3

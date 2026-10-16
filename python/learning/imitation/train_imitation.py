@@ -24,10 +24,9 @@ if _repo_python not in sys.path:
 from learning.imitation.models import BehavioralCloningPolicy, ActionChunkingPolicy
 
 
-def load_demonstration_tensors(data_dir: str):
-    """Loads recorded episodes (from HDF5 or JSON) and extracts (obs, action) tensor pairs."""
-    all_obs = []
-    all_acts = []
+def load_demonstration_episodes(data_dir: str):
+    """Loads recorded episodes (from HDF5 or JSON) preserving episode boundaries."""
+    episodes = []
 
     # 1. Check for HDF5 demonstration files
     h5_files = []
@@ -48,14 +47,16 @@ def load_demonstration_tensors(data_dir: str):
                         if len(qpos) < 50:
                             print(f"[INFO] Skipping {os.path.basename(h5_p)}: Insufficient frames ({len(qpos)} < 50)")
                             continue
-                        for q, a in zip(qpos, act):
-                            all_obs.append(q)
-                            all_acts.append(a)
+                        episodes.append({
+                            "episode_id": os.path.splitext(os.path.basename(h5_p))[0],
+                            "obs": torch.tensor(qpos, dtype=torch.float32),
+                            "act": torch.tensor(act, dtype=torch.float32),
+                        })
             except Exception as e:
                 print(f"[WARN] Error reading HDF5 {h5_p}: {e}")
 
     # 2. Check for JSON trajectory directories
-    if not all_obs and os.path.isdir(data_dir):
+    if not episodes and os.path.isdir(data_dir):
         ep_dirs = sorted(glob.glob(os.path.join(data_dir, "ep_*")))
         for ep_p in ep_dirs:
             traj_p = os.path.join(ep_p, "trajectory.json")
@@ -64,6 +65,8 @@ def load_demonstration_tensors(data_dir: str):
             with open(traj_p, "r", encoding="utf-8") as f:
                 data = json.load(f)
             steps = data.get("timesteps", [])
+            ep_obs = []
+            ep_act = []
             for s in steps:
                 q = s.get("joint_positions", [0.0] * 6)[:6]
                 v = s.get("joint_velocities", [0.0] * 6)[:6]
@@ -73,13 +76,21 @@ def load_demonstration_tensors(data_dir: str):
                 obs = q + v + tcp_pos + [stroke]
                 act = s.get("action", q)[:6] + [stroke, 1.0]
 
-                all_obs.append(obs)
-                all_acts.append(act)
+                ep_obs.append(obs)
+                ep_act.append(act)
 
-    if not all_obs:
+            if len(ep_obs) >= 50:
+                episodes.append({
+                    "episode_id": os.path.basename(ep_p),
+                    "obs": torch.tensor(ep_obs, dtype=torch.float32),
+                    "act": torch.tensor(ep_act, dtype=torch.float32),
+                })
+
+    if not episodes:
         print("[INFO] No existing episodes found. Generating synthetic demonstration buffer...")
-        # Synthetic fallback demonstrations for testing/training validation
         for ep in range(4):
+            ep_obs = []
+            ep_act = []
             for t in range(50):
                 tau = t * 0.02
                 q = [0.2 * np.sin(tau), 0.5 + 0.1 * np.cos(tau), -0.6, 0.1, 0.0, 0.0]
@@ -88,12 +99,23 @@ def load_demonstration_tensors(data_dir: str):
                 stroke = 0.035 if t < 25 else 0.010
                 obs = q + v + tcp + [stroke]
                 act = q + [stroke, 1.0]
-                all_obs.append(obs)
-                all_acts.append(act)
+                ep_obs.append(obs)
+                ep_act.append(act)
+            episodes.append({
+                "episode_id": f"synthetic_ep_{ep:02d}",
+                "obs": torch.tensor(ep_obs, dtype=torch.float32),
+                "act": torch.tensor(ep_act, dtype=torch.float32),
+            })
 
-    obs_tensor = torch.tensor(all_obs, dtype=torch.float32)
-    act_tensor = torch.tensor(all_acts, dtype=torch.float32)
-    return obs_tensor, act_tensor
+    return episodes
+
+
+def load_demonstration_tensors(data_dir: str):
+    """Loads all demonstration frames as concatenated tensors (legacy interface)."""
+    episodes = load_demonstration_episodes(data_dir)
+    all_obs = torch.cat([ep["obs"] for ep in episodes], dim=0)
+    all_acts = torch.cat([ep["act"] for ep in episodes], dim=0)
+    return all_obs, all_acts
 
 
 def train_policy(
@@ -108,18 +130,47 @@ def train_policy(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training Device: {device} | Model Type: {model_type.upper()}")
 
-    obs_tensor, act_tensor = load_demonstration_tensors(data_dir)
-    print(f"Loaded {len(obs_tensor)} demonstration steps (Obs dim: {obs_tensor.shape[1]}, Action dim: {act_tensor.shape[1]})")
+    episodes = load_demonstration_episodes(data_dir)
+    n_ep = len(episodes)
+    print(f"Discovered {n_ep} demonstration episode(s). Splitting by episode to prevent frame leakage...")
 
-    # Compute normalization statistics
-    mean_obs = obs_tensor.mean(dim=0)
-    std_obs = obs_tensor.std(dim=0)
+    # Episode-level split: 70% train, 15% val, 15% test
+    n_test = max(1, int(n_ep * 0.15)) if n_ep >= 5 else 0
+    n_val = max(1, int(n_ep * 0.15)) if n_ep >= 4 else (1 if n_ep >= 2 else 0)
+    n_train = max(1, n_ep - n_val - n_test)
 
-    dataset = TensorDataset(obs_tensor, act_tensor)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    train_eps = episodes[:n_train]
+    val_eps = episodes[n_train:n_train + n_val] if n_val > 0 else []
+    test_eps = episodes[n_train + n_val:] if n_test > 0 else []
 
-    obs_dim = int(obs_tensor.shape[1])
-    action_dim = int(act_tensor.shape[1])
+    split_manifest = {
+        "train_episodes": [ep["episode_id"] for ep in train_eps],
+        "val_episodes": [ep["episode_id"] for ep in val_eps],
+        "test_episodes": [ep["episode_id"] for ep in test_eps],
+    }
+    print(f" Split summary: {len(train_eps)} Train, {len(val_eps)} Val, {len(test_eps)} Test episodes")
+
+    train_obs = torch.cat([ep["obs"] for ep in train_eps], dim=0)
+    train_act = torch.cat([ep["act"] for ep in train_eps], dim=0)
+    print(f" Train steps: {len(train_obs)} | Obs dim: {train_obs.shape[1]} | Action dim: {train_act.shape[1]}")
+
+    # Compute normalization statistics ONLY on training set (preventing data leakage)
+    mean_obs = train_obs.mean(dim=0)
+    std_obs = train_obs.std(dim=0)
+    std_obs[std_obs < 1e-6] = 1.0
+
+    train_dataset = TensorDataset(train_obs, train_act)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+    val_loader = None
+    if val_eps:
+        val_obs = torch.cat([ep["obs"] for ep in val_eps], dim=0)
+        val_act = torch.cat([ep["act"] for ep in val_eps], dim=0)
+        val_dataset = TensorDataset(val_obs, val_act)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+    obs_dim = int(train_obs.shape[1])
+    action_dim = int(train_act.shape[1])
 
     if model_type.lower() == "act":
         policy = ActionChunkingPolicy(obs_dim=obs_dim, action_dim=action_dim, chunk_size=5).to(device)
@@ -133,7 +184,8 @@ def train_policy(
     loss_fn = nn.MSELoss()
 
     start_time = time.time()
-    history = []
+    train_history = []
+    val_history = []
 
     print("\n--- Starting Imitation Learning Training ---")
     for epoch in range(1, epochs + 1):
@@ -141,7 +193,7 @@ def train_policy(
         epoch_loss = 0.0
         batches = 0
 
-        for batch_obs, batch_act in loader:
+        for batch_obs, batch_act in train_loader:
             batch_obs = batch_obs.to(device)
             batch_act = batch_act.to(device)
 
@@ -149,7 +201,6 @@ def train_policy(
             pred_act = policy(batch_obs)
 
             if model_type.lower() == "act":
-                # Compare against expanded chunk
                 target_chunk = batch_act.unsqueeze(1).repeat(1, 5, 1)
                 loss = loss_fn(pred_act, target_chunk)
             else:
@@ -163,13 +214,58 @@ def train_policy(
             batches += 1
 
         scheduler.step()
-        avg_loss = epoch_loss / max(1, batches)
-        history.append(avg_loss)
+        avg_train_loss = epoch_loss / max(1, batches)
+        train_history.append(avg_train_loss)
+
+        # Validation pass
+        avg_val_loss = None
+        if val_loader:
+            policy.eval()
+            val_loss_sum = 0.0
+            val_batches = 0
+            with torch.no_grad():
+                for v_obs, v_act in val_loader:
+                    v_obs = v_obs.to(device)
+                    v_act = v_act.to(device)
+                    v_pred = policy(v_obs)
+                    if model_type.lower() == "act":
+                        v_target = v_act.unsqueeze(1).repeat(1, 5, 1)
+                        l = loss_fn(v_pred, v_target)
+                    else:
+                        l = loss_fn(v_pred, v_act)
+                    val_loss_sum += l.item()
+                    val_batches += 1
+            avg_val_loss = val_loss_sum / max(1, val_batches)
+            val_history.append(avg_val_loss)
+
         if epoch % 5 == 0 or epoch == 1 or epoch == epochs:
-            print(f" Epoch [{epoch:2d}/{epochs:2d}] - MSE Loss: {avg_loss:8.6f} - LR: {scheduler.get_last_lr()[0]:.6f}")
+            val_str = f" | Val MSE: {avg_val_loss:8.6f}" if avg_val_loss is not None else ""
+            print(f" Epoch [{epoch:2d}/{epochs:2d}] - Train MSE: {avg_train_loss:8.6f}{val_str} - LR: {scheduler.get_last_lr()[0]:.6f}")
 
     elapsed = time.time() - start_time
     print(f"--- Training Finished in {elapsed:.2f}s ---")
+
+    # Offline evaluation on held-out test episodes
+    test_metrics = {}
+    if test_eps:
+        policy.eval()
+        test_obs = torch.cat([ep["obs"] for ep in test_eps], dim=0).to(device)
+        test_act = torch.cat([ep["act"] for ep in test_eps], dim=0).to(device)
+        with torch.no_grad():
+            test_preds = policy(test_obs)
+            if model_type.lower() == "act":
+                test_preds = test_preds[:, 0, :]
+        test_err = (test_preds - test_act).cpu().numpy()
+        test_metrics = {
+            "test_steps": len(test_obs),
+            "test_mse": float(np.mean(test_err ** 2)),
+            "test_mae": float(np.mean(np.abs(test_err))),
+            "test_max_err": float(np.max(np.abs(test_err))),
+        }
+        print(f"\n Held-Out Test Evaluation ({len(test_eps)} episodes, {len(test_obs)} steps):")
+        print(f"   Test MSE: {test_metrics['test_mse']:.6f}")
+        print(f"   Test MAE: {test_metrics['test_mae']:.6f}")
+        print(f"   Test Max Error: {test_metrics['test_max_err']:.6f}")
 
     # Save Checkpoint
     checkpoint_path = os.path.join(output_dir, f"{model_type}_piper_policy.pt")
@@ -178,8 +274,12 @@ def train_policy(
         "model_state_dict": policy.state_dict(),
         "obs_mean": mean_obs,
         "obs_std": std_obs,
-        "loss_history": history,
-        "final_loss": history[-1],
+        "train_loss_history": train_history,
+        "val_loss_history": val_history,
+        "final_train_loss": train_history[-1],
+        "final_val_loss": val_history[-1] if val_history else None,
+        "test_metrics": test_metrics,
+        "splits": split_manifest,
         "model_type": model_type,
         "obs_dim": obs_dim,
         "action_dim": action_dim,
@@ -192,7 +292,10 @@ def train_policy(
         "checkpoint_path": checkpoint_path,
         "model_type": model_type,
         "epochs": epochs,
-        "final_mse_loss": float(history[-1]),
+        "final_train_mse_loss": float(train_history[-1]),
+        "final_val_mse_loss": float(val_history[-1]) if val_history else None,
+        "test_metrics": test_metrics,
+        "splits": split_manifest,
         "device": str(device),
         "obs_dim": obs_dim,
         "action_dim": action_dim,
@@ -202,7 +305,7 @@ def train_policy(
         json.dump(manifest, f, indent=2)
 
     print(f"[SUCCESS] Checkpoint saved: {checkpoint_path}")
-    return checkpoint_path, history[-1]
+    return checkpoint_path, train_history[-1]
 
 
 def main():

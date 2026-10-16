@@ -62,6 +62,7 @@ class LiveObservationRecorder:
         pika_serial_port: str = "/dev/ttyUSB0",
         pika_enabled: bool = True,
         target_control_hz: float = 30.0,
+        action_provider: Optional[Any] = None,
     ):
         self.output_dir = Path(output_dir)
         self.can_port = can_port
@@ -70,6 +71,7 @@ class LiveObservationRecorder:
         self.pika_serial_port = pika_serial_port
         self.pika_enabled = pika_enabled
         self.target_hz = target_control_hz
+        self.action_provider = action_provider
 
         # Hardware handles
         self.piper = None
@@ -90,6 +92,7 @@ class LiveObservationRecorder:
             "realsense_depth_frames": 0,
             "overhead_color_frames": 0,
             "pika_samples": 0,
+            "action_samples": 0,
             "dropped_samples": 0,
             "start_time_monotonic": 0.0,
             "end_time_monotonic": 0.0,
@@ -197,13 +200,19 @@ class LiveObservationRecorder:
         duration_seconds: float = 10.0,
         task_description: str = "Live hardware observation recording",
         operator_name: str = "operator",
+        episode_mode: bool = False,
+        task_name: str = "general",
     ) -> Path:
         """
         Executes a live hardware observation recording session for the specified duration.
         """
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_id = f"live_obs_{timestamp_str}"
-        self.session_dir = self.output_dir / self.session_id
+        if episode_mode:
+            self.session_id = f"ep_{task_name}_{timestamp_str}"
+            self.session_dir = self.output_dir / task_name / self.session_id
+        else:
+            self.session_id = f"live_obs_{timestamp_str}"
+            self.session_dir = self.output_dir / self.session_id
         self.session_dir.mkdir(parents=True, exist_ok=True)
 
         img_wrist_dir = self.session_dir / "wrist_color"
@@ -257,6 +266,9 @@ class LiveObservationRecorder:
                         q_rad = [round((val / 1000.0) * (np.pi / 180.0), 6) for val in raw_q]
                         sample["joint_positions"] = q_rad
 
+                        if hasattr(j_msg, "time_stamp") and isinstance(j_msg.time_stamp, (int, float, str)):
+                            sample["can_driver_timestamp"] = j_msg.time_stamp
+
                         # End effector pose
                         ep_msg = self.piper.GetArmEndPoseMsgs()
                         ep = ep_msg.end_pose
@@ -272,6 +284,19 @@ class LiveObservationRecorder:
                                 round((ep.RZ_axis / 1e3) * (np.pi / 180.0), 6),
                             ],
                         }
+
+                        # Joint velocities and efforts
+                        try:
+                            high_msg = self.piper.GetArmHighSpdInfoMsgs()
+                            if high_msg is not None:
+                                raw_v = [getattr(getattr(high_msg, f"motor_{i}", None), "motor_speed", 0.0) for i in range(1, 7)]
+                                if all(isinstance(v, (int, float)) for v in raw_v):
+                                    sample["joint_velocities"] = [round(float(v) * 0.001, 5) for v in raw_v]
+                                raw_e = [getattr(getattr(high_msg, f"motor_{i}", None), "effort", 0.0) for i in range(1, 7)]
+                                if all(isinstance(e, (int, float)) for e in raw_e):
+                                    sample["joint_efforts"] = [round(float(e), 4) for e in raw_e]
+                        except Exception:
+                            pass
 
                         # Gripper telemetry
                         grp_msg = self.piper.GetArmGripperMsgs()
@@ -325,12 +350,14 @@ class LiveObservationRecorder:
                                 c_name = f"frame_{step:05d}.jpg"
                                 cv2.imwrite(str(img_wrist_dir / c_name), c_arr, [cv2.IMWRITE_JPEG_QUALITY, 85])
                                 sample["wrist_color_file"] = f"wrist_color/{c_name}"
+                                sample["wrist_color_hw_time_ms"] = round(float(c_f.get_timestamp()), 3)
                                 self.stats["realsense_color_frames"] += 1
                             if d_f:
                                 d_arr = np.asanyarray(d_f.get_data())  # uint16 (mm)
                                 d_name = f"depth_{step:05d}.png"
                                 cv2.imwrite(str(img_depth_dir / d_name), d_arr)
                                 sample["wrist_depth_file"] = f"wrist_depth/{d_name}"
+                                sample["wrist_depth_hw_time_ms"] = round(float(d_f.get_timestamp()), 3)
                                 self.stats["realsense_depth_frames"] += 1
                     except Exception as e:
                         logger.debug(f"RealSense polling error: {e}")
@@ -346,6 +373,16 @@ class LiveObservationRecorder:
                             self.stats["overhead_color_frames"] += 1
                     except Exception as e:
                         logger.debug(f"Overhead frame capture error: {e}")
+
+                # --- 5. Commanded Operator Action (if action provider attached) ---
+                if self.action_provider is not None:
+                    try:
+                        act = self.action_provider.get_latest_action()
+                        if act is not None:
+                            sample["action"] = act
+                            self.stats["action_samples"] += 1
+                    except Exception as e:
+                        logger.debug(f"Action provider poll error: {e}")
 
                 # Write record to JSONL
                 telem_f.write(json.dumps(sample) + "\n")
@@ -396,6 +433,11 @@ class LiveObservationRecorder:
                     "source": "Pika Sense & Vive Tracker (/dev/ttyUSB0)",
                     "samples": self.stats["pika_samples"],
                     "hz": round(self.stats["pika_samples"] / max(0.1, total_duration), 2),
+                },
+                "actions": {
+                    "samples": self.stats["action_samples"],
+                    "hz": round(self.stats["action_samples"] / max(0.1, total_duration), 2),
+                    "active": (self.stats["action_samples"] > 0),
                 },
             },
             "dropped_samples": self.stats["dropped_samples"],

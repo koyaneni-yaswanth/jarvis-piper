@@ -179,6 +179,22 @@ class LiveObservationReplayer:
                 obs_grp.create_dataset("tcp_position_m", data=np.array(tcp_pos, dtype=np.float32), compression="gzip")
                 obs_grp.create_dataset("tcp_rpy_rad", data=np.array(tcp_rpy, dtype=np.float32), compression="gzip")
 
+            vels = [r.get("joint_velocities") for r in self.records if "joint_velocities" in r]
+            if len(vels) == n_steps:
+                obs_grp.create_dataset("joint_velocities", data=np.array(vels, dtype=np.float32), compression="gzip")
+
+            efforts = [r.get("joint_efforts") for r in self.records if "joint_efforts" in r]
+            if len(efforts) == n_steps:
+                obs_grp.create_dataset("joint_efforts", data=np.array(efforts, dtype=np.float32), compression="gzip")
+
+            actions = [r.get("action") for r in self.records if "action" in r and r.get("action") is not None]
+            if len(actions) == n_steps:
+                if isinstance(actions[0], list):
+                    h5.create_dataset("action", data=np.array(actions, dtype=np.float32), compression="gzip")
+                elif isinstance(actions[0], dict) and "values" in actions[0]:
+                    act_vals = [a["values"] for a in actions]
+                    h5.create_dataset("action", data=np.array(act_vals, dtype=np.float32), compression="gzip")
+
             # 2. PIKA Sense
             pika_data = [r.get("pika_sense") for r in self.records if "pika_sense" in r]
             if len(pika_data) == n_steps:
