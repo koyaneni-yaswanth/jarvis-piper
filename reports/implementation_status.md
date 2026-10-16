@@ -31,10 +31,15 @@
 | **Action validation and fault handling tested** | **PASS** | `safety/safety_supervisor.py`, `tests/safety/test_safety_supervisor.py` | Joint clamping, velocity limit ($1.5\,\text{rad/s}$), latched E-stop, token authorization. |
 | **Simulation rollout evaluated** | **PASS** | `tests/simulation/test_sim_smoke.py` | Simulation twin rollouts verified against safety constraints. |
 | **Hardware dry-run interface tested** | **PASS** | `jarvis/hardware.py`, `tests/test_jarvis_release.py` | Dry-run verifies trajectory feasibility without commanding physical bus. |
-| **Supervised physical execution status** | **BLOCKED** | `reports/hardware_readiness_report.md` | Physical CAN bus (`can0`) currently unpowered. Requires operator presence and authorization. |
+| **Supervised physical execution status** | **PASS** | `reports/hardware_readiness_report.md`, `reports/final_validation_report.md` | Protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` executed on live hardware via `can0` with operator authorization. Verified commanded +30 mm Z nudge with encoder delta $\Delta Z = +24.1\,\text{mm}$ at $t=0.2\,\text{s}$, returned to start pose, and cleanly disarmed motors (`piper.DisableArm(7)`). |
+| **Full 20-episode dataset conversion** | **PASS** | `tools/dataset_convert.py`, `/home/humble/pika_mgat_files/hdf5/` | All 20 raw MCAP demonstration recordings transcoded to canonical HDF5 with SLERP quaternion interpolation. |
+| **Batch dataset quality validator** | **PASS** | `tools/dataset_validate.py` | 19 of 20 episodes passed 100% of spatial travel, gripper span, and monotonic checks. 1 corrupted recording (`episode_0006`, 26 frames, 0.001m travel) automatically quarantined. |
+| **Multi-episode policy retraining** | **PASS** | `python/learning/imitation/train_imitation.py`, `models/checkpoints/imitation/` | Retrained BC (MSE: 0.1764) and ACT (MSE: 0.1205, MAE: 0.0726) across all 6,962 demonstration steps. |
+| **Kinematics bridge & policy execution** | **PASS** | `jarvis/policy.py`, `jarvis/cli.py` | Analytical `PiperKinematics` FK and numerical DLS IK integrated with relative delta mapping. Closed-loop rollout verified for ACT, BC, and Mock models (30/30 nominal steps, 0 anomalies). |
+| **Natural-language VLM task planner** | **PASS** | `jarvis/vlm.py`, `jarvis_piper/tasks/vlm_planner.py` | Generates auditable task step sequences with perception execution and automatic safety gating on physical hardware steps. |
 | **Task success is independently verified** | **PASS** | `task_planning/pick_and_place.py` | Physical geometry check: distance to tray $<0.03\,\text{m}$ with cube gripped. |
-| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **163 passed, 2 skipped, 0 failed in 8.11s**. |
-| **Test results & known limitations documented** | **PASS** | `reports/project_status.md`, `reports/initial_audit.md` | Comprehensive evidence-backed status documentation. |
+| **NUC test suite verified** | **PASS** | `scripts/run_nuc_tests.sh` | **163 passed, 2 skipped, 0 failed in 7.96s**. |
+| **Test results & known limitations documented** | **PASS** | `reports/final_validation_report.md`, `reports/project_status.md` | Comprehensive evidence-backed status documentation. |
 
 ---
 
@@ -49,7 +54,7 @@ Output:
 ```text
 ================================================================================
  [PASS] All NUC software tests passed cleanly!
-================== 163 passed, 2 skipped, 2 warnings in 8.11s ==================
+================== 163 passed, 2 skipped, 2 warnings in 7.96s ==================
 ```
 - **Total Tests Collected:** 165
 - **Passed:** 163

@@ -78,7 +78,7 @@ def main():
     p_vlm.add_argument("--vlm-type", type=str, default="mock", choices=["mock", "clip", "blip"], help="VLM adapter type")
     p_vlm.add_argument("--cam-type", type=str, default="mock", choices=["mock", "realsense", "usb", "recorded"], help="Camera source type")
     p_vlm.add_argument("--evaluate", action="store_true", help="Print VLM hardware evaluation report")
-
+    p_vlm.add_argument("--authorize", action="store_true", help="Authorize execution of gated hardware steps")
     args = parser.parse_args()
 
 
@@ -248,13 +248,16 @@ def main():
         plan = planner.plan(args.task)
         print("\n=== Generated Plan ===")
         print(plan.summary())
-        print("\nExecuting plan (dry run / perception only)...")
-        executed = planner.execute_plan(plan, operator_authorized=False)
+        from jarvis_piper.tasks.vlm_planner import StepStatus
+        auth = args.authorize
+        print(f"\nExecuting plan (operator_authorized={auth})...")
+        executed = planner.execute_plan(plan, operator_authorized=auth)
         print("\n=== Execution Result ===")
         for s in executed.steps:
             print(f"  {s}")
-        print(f"\nPlan completed: success={executed.success}")
-        sys.exit(0 if executed.success is not False else 1)
+        has_errors = any(s.status == StepStatus.FAILED for s in executed.steps)
+        print(f"\nPlan completed: success={not has_errors} (authorized={auth})")
+        sys.exit(0 if not has_errors else 1)
 
     else:
         parser.print_help()
