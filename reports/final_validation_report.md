@@ -43,22 +43,22 @@
 
 ## 2. Policy Benchmark on Real Demonstration Data
 
-Evaluated across **2,274 physical demonstration steps** ($30\,\text{Hz}$ recording rate) from episodes `episode_0000.hdf5`, `episode_0001.hdf5`, `episode_0003.hdf5`, `episode_0004.hdf5`, and `episode_0005.hdf5`:
+Evaluated across **6,962 physical demonstration steps** ($30\,\text{Hz}$ recording rate) from all 19 validated episodes (`episode_0000.hdf5` through `episode_0019.hdf5`, excluding corrupted 26-frame `episode_0006.hdf5` which was automatically quarantined by the quality validator):
 
 | Model Architecture | Epochs | Training Time | Test Samples | Action MSE | Action MAE | Mean Jerk ($\text{rad/s}^3$) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Behavioral Cloning (MLP Residual)** | 30 | 8.02 s | 2,274 | **0.138569** | **0.155031** | 6,080.64 | **TRAINED & EVALUATED** |
-| **Action Chunking with Transformers (ACT)** | 30 | 11.83 s | 2,274 | **0.070221** | **0.056907** | 6,858.27 | **TRAINED & EVALUATED** |
+| **Behavioral Cloning (MLP Residual)** | 30 | 16.39 s | 6,962 | **0.176359** | **0.156477** | 9,730.57 | **TRAINED & EVALUATED** |
+| **Action Chunking with Transformers (ACT)** | 30 | 7.38 s | 6,962 | **0.120534** | **0.072554** | 9,969.62 | **TRAINED & EVALUATED** |
 
-**Empirical Finding:** The ACT temporal action-chunking architecture achieved a **63.3% reduction in mean absolute prediction error** ($0.0569$ vs $0.1550$) and a **49.3% reduction in mean squared error** over the standard BC baseline on the identical physical demonstration dataset.
+**Empirical Finding:** Across the full multi-episode physical demonstration corpus (6,962 samples), the ACT temporal action-chunking architecture achieved a **53.6% reduction in mean absolute prediction error** ($0.0725$ vs $0.1565$) and a **31.7% reduction in mean squared error** over standard BC.
 
 ---
 
 ## 3. Truthful Deployment Summary
 
-1. **Software Pipeline:** 100% operational, reproducible, and tested (163/163 unit and integration tests passing).
-2. **Dataset Engine:** 20 raw physical MCAP episodes (2.1 GB) verified; automated tools for inspection, quality validation, and conversion implemented and tested.
-3. **Machine Learning:** Both BC and ACT policies successfully trained, checkpointed, and evaluated on genuine physical demonstrations with real metrics.
-4. **Task Orchestration:** End-to-end language-conditioned perception and execution state machine verified in mock and dry-run modes with strict operator safety gating.
+1. **Software Pipeline:** 100% operational, reproducible, and tested (163/163 unit and integration tests passing in 7.96 seconds).
+2. **Dataset Engine:** 20 raw physical MCAP episodes (2.1 GB) fully converted to canonical HDF5 with SLERP quaternion interpolation; batch quality validator executed across all episodes with 19 passed and 1 bad recording (`episode_0006`) correctly quarantined.
+3. **Machine Learning:** Both BC and ACT policies retrained and checkpointed on all 6,962 demonstration steps with rigorous offline metrics.
+4. **Kinematics & Policy Bridge:** Fully integrated analytical Piper forward kinematics and numerical DLS inverse kinematics with relative delta mapping in `SupervisedPolicyRunner`. Verified closed-loop rollout in `jarvis policy` for ACT, BC, and Mock models with 30/30 nominal steps and zero anomalies.
 5. **Physical Actuation:** Verified. Hardware test protocol `PHYSICAL-TEST-001-SUPERVISED-NUDGE` executed with operator authorization and E-stop ready. Robot was enabled, completed commanded +30 mm Z nudge via CAN, verified encoder motion ($\Delta Z = +24.1\,\text{mm}$ at $t=0.2\,\text{s}$), returned to start pose, and motors cleanly disarmed (`piper.DisableArm(7)`). Joint enable status verified as `[False, False, False, False, False, False]`.
 
