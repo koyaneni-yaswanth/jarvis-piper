@@ -176,7 +176,7 @@ def main():
         arm.connect()
         gripper = MockGripper()
         gripper.connect()
-        safety = SafetySupervisor()
+        safety = SafetySupervisor(watchdog_timeout_sec=0.25)
         policy = None
         model_choice = getattr(args, "model", "act").lower()
 

@@ -307,3 +307,111 @@ def test_live_recorder_with_action_provider(tmp_path):
     assert report["valid"] is True
     assert report["streams_verified"]["operator_actions"] is True
     assert report["metrics"]["action_samples"] >= 3
+
+
+def test_teleop_action_provider_clutch_and_mapping():
+    """Validates TeleoperationActionProvider clutch logic, mapping, and 8-dim canonical output."""
+    from jarvis.teleop import TeleoperationActionProvider, TeleoperationMapper
+
+    mapper = TeleoperationMapper(translation_scale=1.0)
+    provider = TeleoperationActionProvider(mapper=mapper)
+
+    # Initially disengaged
+    assert provider.clutch_engaged is False
+    assert provider.get_latest_action() is None
+
+    # Step 1: Engage clutch at hand pos [0.1, 0.2, 0.3], robot pos [0.25, 0.0, 0.20]
+    act1 = provider.update(
+        hand_pos=[0.1, 0.2, 0.3],
+        hand_quat=[0.0, 0.0, 0.0, 1.0],
+        gripper_mm=85.0,
+        clutch_pressed=True,
+        robot_pos=[0.25, 0.0, 0.20],
+    )
+    assert act1 is not None
+    assert provider.clutch_engaged is True
+    assert len(act1["values"]) == 8
+    assert act1["clutch_engaged"] is True
+    assert act1["gripper_mm"] == 85.0
+    # At clutch engagement, delta is 0, so target matches reference robot pos
+    assert np.allclose(act1["cartesian_pos"], [0.25, 0.0, 0.20], atol=1e-3)
+
+    # Step 2: Hand moves +0.05m along X
+    act2 = provider.update(
+        hand_pos=[0.15, 0.2, 0.3],
+        hand_quat=[0.0, 0.0, 0.0, 1.0],
+        gripper_mm=85.0,
+        clutch_pressed=True,
+        robot_pos=[0.25, 0.0, 0.20],
+    )
+    assert act2 is not None
+    # Robot target pos moves in +X direction
+    assert act2["cartesian_pos"][0] > 0.25
+
+    # Step 3: Release clutch
+    act3 = provider.update(
+        hand_pos=[0.20, 0.2, 0.3],
+        hand_quat=[0.0, 0.0, 0.0, 1.0],
+        gripper_mm=85.0,
+        clutch_pressed=False,
+        robot_pos=[0.25, 0.0, 0.20],
+    )
+    assert provider.clutch_engaged is False
+    assert act3["clutch_engaged"] is False
+
+
+def test_teleop_action_provider_update_from_sample():
+    """Ensures TeleoperationActionProvider seamlessly consumes LiveObservationRecorder sample dictionaries."""
+    from jarvis.teleop import TeleoperationActionProvider
+
+    provider = TeleoperationActionProvider()
+
+    sample = {
+        "step": 0,
+        "pika_tracker_pose": {
+            "position": [-0.10, 0.50, 0.15],
+            "rotation": [0.0, 0.7071, 0.0, 0.7071],
+        },
+        "pika_sense": {
+            "encoder_rad": 1.57,
+            "gripper_distance_mm": 90.0,
+            "command_trigger_state": 1,  # Clutch pressed
+        },
+        "tcp_pose": {
+            "position_m": [0.30, 0.0, 0.20],
+            "rpy_rad": [0.0, 0.0, 0.0],
+        },
+        "joint_positions": [0.0, 0.5, -0.6, 0.0, 0.1, 0.0],
+    }
+
+    act = provider.update_from_sample(sample)
+    assert act is not None
+    assert act["clutch_engaged"] is True
+    assert len(act["values"]) == 8
+    assert act["gripper_mm"] == 90.0
+    assert provider.get_latest_action() is act
+
+
+def test_live_replay_hdf5_canonical_qpos_export(mock_recorded_session, tmp_path):
+    """Verifies HDF5 export generates canonical observations/qpos and image group aliases."""
+    if not HAS_H5PY:
+        pytest.skip("h5py not installed")
+
+    import h5py
+    out_h5 = tmp_path / "canonical_export.h5"
+    replayer = LiveObservationReplayer(mock_recorded_session)
+    exported = replayer.export_to_hdf5(out_h5)
+    assert exported.is_file()
+
+    with h5py.File(exported, "r") as h5:
+        assert "observations" in h5
+        obs = h5["observations"]
+        # qpos dataset exists and matches frame count
+        assert "qpos" in obs
+        assert obs["qpos"].shape[0] == 15
+        assert obs["qpos"].shape[1] >= 7
+        # images group exists with color/depth aliases
+        assert "images" in obs
+        assert "color" in obs["images"]
+        assert "depth" in obs["images"]
+

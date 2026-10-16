@@ -250,6 +250,30 @@ class LiveObservationReplayer:
                             img = cv2.imread(str(p))
                             ds[idx] = img
 
+                # Aliases for downstream demonstration dataset compatibility
+                img_grp = obs_grp.create_group("images")
+                if "wrist_color" in obs_grp:
+                    img_grp["color"] = obs_grp["wrist_color"]
+                if "wrist_depth" in obs_grp:
+                    img_grp["depth"] = obs_grp["wrist_depth"]
+                if "overhead_color" in obs_grp:
+                    img_grp["fisheye"] = obs_grp["overhead_color"]
+
+            # Canonical observations/qpos (for direct downstream policy training)
+            tracker_poses = [r.get("pika_tracker_pose") for r in self.records if "pika_tracker_pose" in r]
+            if len(tracker_poses) == n_steps and len(pika_data) == n_steps:
+                qpos_list = []
+                for tp, pd in zip(tracker_poses, pika_data):
+                    pos = tp.get("position", [0.0, 0.0, 0.0])
+                    rot = tp.get("rotation", [0.0, 0.0, 0.0, 1.0])
+                    grip = pd.get("gripper_distance_mm", 0.0)
+                    qpos_list.append(list(pos[:3]) + list(rot[:4]) + [float(grip)])
+                obs_grp.create_dataset("qpos", data=np.array(qpos_list, dtype=np.float32), compression="gzip")
+            elif len(joints) == n_steps:
+                if len(grippers) == n_steps:
+                    j_qpos = [list(j) + [g * 1000.0] for j, g in zip(joints, grippers)]
+                    obs_grp.create_dataset("qpos", data=np.array(j_qpos, dtype=np.float32), compression="gzip")
+
         return out_path
 
 

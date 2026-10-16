@@ -34,6 +34,9 @@ def main():
     parser.add_argument("--camera-index", type=int, default=0, help="Overhead camera /dev/video index")
     parser.add_argument("--no-realsense", action="store_true", help="Disable RealSense stream")
     parser.add_argument("--no-pika", action="store_true", help="Disable PIKA Sense stream")
+    parser.add_argument("--teleop-actions", action="store_true", help="Attach PIKA teleoperation action provider to capture commanded operator actions")
+    parser.add_argument("--episode-mode", action="store_true", help="Record as hierarchical demonstration episode")
+    parser.add_argument("--task-name", type=str, default="general", help="Task name for episode directory hierarchy")
     args = parser.parse_args()
 
     print("=" * 80)
@@ -43,7 +46,15 @@ def main():
     print(f" Target Rate     : {args.hz:.1f} Hz")
     print(f" Output Folder   : {args.out_dir}")
     print(f" Mode            : STRICTLY PASSIVE / READ-ONLY (No motor enable, no movement)")
+    print(f" Teleop Actions  : {'ENABLED' if args.teleop_actions else 'DISABLED (Observation Only)'}")
+    print(f" Episode Mode    : {'ENABLED (' + args.task_name + ')' if args.episode_mode else 'DISABLED'}")
     print("=" * 80)
+
+    action_provider = None
+    if args.teleop_actions:
+        from jarvis.teleop import TeleoperationActionProvider
+        action_provider = TeleoperationActionProvider()
+        print("[INFO] Teleoperation Action Provider attached (tracking dead-man clutch & commands).")
 
     recorder = LiveObservationRecorder(
         output_dir=args.out_dir,
@@ -52,6 +63,7 @@ def main():
         overhead_camera_index=args.camera_index,
         pika_enabled=(not args.no_pika),
         target_control_hz=args.hz,
+        action_provider=action_provider,
     )
 
     print("\n[INFO] Discovering and connecting to physical hardware...")
@@ -72,6 +84,8 @@ def main():
         duration_seconds=args.duration,
         task_description=args.task,
         operator_name=os.environ.get("USER", "operator"),
+        episode_mode=args.episode_mode,
+        task_name=args.task_name,
     )
 
     print("\n" + "=" * 80)

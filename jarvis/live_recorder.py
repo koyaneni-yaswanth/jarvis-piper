@@ -377,6 +377,8 @@ class LiveObservationRecorder:
                 # --- 5. Commanded Operator Action (if action provider attached) ---
                 if self.action_provider is not None:
                     try:
+                        if hasattr(self.action_provider, "update_from_sample"):
+                            self.action_provider.update_from_sample(sample)
                         act = self.action_provider.get_latest_action()
                         if act is not None:
                             sample["action"] = act
