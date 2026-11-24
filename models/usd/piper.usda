@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1.0
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "Piper" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+    )
+    {
+        custom string source_urdf = "/home/humble/robotics/jarvis-piper/ros2_ws/src/jarvis_piper_bringup/urdf/piper.urdf"
+        custom string robot_type = "AgileX_PiPER_6DOF"
+        custom int degrees_of_freedom = 8
+        custom float default_drive_stiffness = 400.0
+        custom float default_drive_damping = 40.0
+        custom token physics:articulationRoot = "true"
+    }
+}

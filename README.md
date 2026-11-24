@@ -34,6 +34,7 @@
 13. [V-JEPA Research Pipeline & Sim-to-Real Benchmarks](#13-v-jepa-research-pipeline--sim-to-real-benchmarks)
 14. [Makefile Acceptance Target Suite](#14-makefile-acceptance-target-suite)
 15. [Physical Hardware Deployment Protocol](#15-physical-hardware-deployment-protocol)
+    - [Comprehensive Workspaces & Execution Manual](docs/PIPER_EXECUTION_AND_RUNNING_GUIDE.md)
 16. [Troubleshooting & FAQ](#16-troubleshooting--faq)
 17. [Citation & License](#17-citation--license)
 
@@ -547,6 +548,15 @@ python scripts/hardware_connection_test.py
 # Launch ROS 2 bringup in supervised hardware mode
 ros2 launch jarvis_piper_bringup robot.launch.py mode:=hardware
 ```
+
+### Step 5: Full PiPER Workspaces & Manipulation Workstations
+For detailed operating instructions and run commands across all PiPER manipulation environments deployed on this host (including MoveIt 2, Genesis World Digital Twin, bare-hand CS20 gesture teleoperation, and singularity avoidance), see the complete manual:
+👉 **[AgileX PiPER Comprehensive Projects & Execution Manual](docs/PIPER_EXECUTION_AND_RUNNING_GUIDE.md)**
+
+Quick shortcuts available on the host:
+- `piper_launch`: Brings up MoveIt 2 hardware workstation, C++ `ros2_control` interface, RViz panel & pick-and-place server.
+- `piper_recover`: 1-click fast CAN 0x150 fault recovery and holding torque re-engagement (< 1.2s).
+- `piper_home`: Fast recovery + automated smooth homing trajectory.
 
 ---
 
