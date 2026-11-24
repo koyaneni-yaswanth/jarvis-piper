@@ -263,19 +263,6 @@ def main():
         print(f" Benchmark Wall Clock   : {bench_elapsed:.2f} s ({bench_elapsed/args.benchmark_seeds:.2f}s per episode)")
         print(f" JSON Summary Report    : {report_p.resolve()}")
         print("=" * 80)
-        if args.gui and env.viewer is not None:
-        print("\n[INFO] Simulation finished. Inspect the robot or close the viewer window to exit.")
-        try:
-            while env.viewer.is_running():
-                env.sync_viewer()
-                time.sleep(0.02)
-        except (KeyboardInterrupt, Exception):
-            pass
-
-    try:
-        env.close()
-    except Exception:
-        pass
         return
 
     # Single Episode Execution
