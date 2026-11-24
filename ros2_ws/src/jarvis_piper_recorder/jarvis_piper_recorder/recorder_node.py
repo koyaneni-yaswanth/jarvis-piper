@@ -10,7 +10,7 @@ import re
 import sys
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -43,7 +43,7 @@ class JarvisPiperRecorderNode(Node):
         super().__init__("jarvis_piper_recorder_node")
 
         # Declare parameters
-        self.declare_parameter("data_dir", "/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/raw_episodes")
+        self.declare_parameter("data_dir", "/home/humble/robotics/jarvis-piper/dataset/raw")
         self.declare_parameter("target_fps", 30.0)
         self.declare_parameter("sync_topic", "/jarvis_piper/sync_frame")
         self.declare_parameter("trigger_topic", "/pika/button_events")

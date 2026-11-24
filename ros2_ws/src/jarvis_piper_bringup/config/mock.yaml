@@ -1,0 +1,16 @@
+# JARVIS-PiPER Mock Mode Configuration (Pure Synthetic, Zero-Hardware)
+mode: "mock"
+
+emitter:
+  rate_hz: 30.0
+  add_noise: true
+  trajectory_pattern: "pick_and_place"
+  image_resolution: [640, 480]
+
+topics:
+  joint_states: "/joint_states"
+  pika_pose: "/pika_pose"
+  gripper_ctrl: "/gripper/ctrl"
+  camera_rgb: "/camera"
+  camera_depth: "/camera/depth_image"
+  imu: "/imu"

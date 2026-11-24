@@ -1,0 +1,29 @@
+# JARVIS-PiPER Dataset Schema & Splitting Configuration
+dataset:
+  name: "jarvis_piper_manipulation"
+  version: "1.0.0"
+  schema_version: "2.0.0"
+  raw_dir: "dataset/raw"
+  processed_dir: "dataset/processed"
+  exports_dir: "dataset/exports"
+
+splitting:
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+  split_by_episode: true
+  ood_criteria:
+    - "unseen_object"
+    - "unseen_position"
+    - "unseen_lighting"
+
+formats:
+  lerobot:
+    enabled: true
+    fps: 30
+  aloha_hdf5:
+    enabled: true
+  rlds:
+    enabled: true
+  world_model:
+    enabled: true

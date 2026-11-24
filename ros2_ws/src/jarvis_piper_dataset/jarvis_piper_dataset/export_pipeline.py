@@ -98,12 +98,12 @@ def main():
     parser = argparse.ArgumentParser(description="JARVIS PiPER Dataset Export CLI")
     parser.add_argument(
         "--input-dir",
-        default="/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/raw_episodes",
+        default="/home/humble/robotics/jarvis-piper/dataset/raw",
         help="Path to raw episodes directory",
     )
     parser.add_argument(
         "--output-dir",
-        default="/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/exports",
+        default="/home/humble/robotics/jarvis-piper/dataset/exports",
         help="Path to export root directory",
     )
     parser.add_argument(

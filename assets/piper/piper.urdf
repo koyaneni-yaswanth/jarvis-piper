@@ -80,14 +80,14 @@
     <visual>
       <origin xyz="0.130 0 0" rpy="0 1.570796 0"/>
       <geometry>
-        <capsule radius="0.04" length="0.260"/>
+        <cylinder radius="0.04" length="0.260"/>
       </geometry>
       <material name="piper_dark"/>
     </visual>
     <collision>
       <origin xyz="0.130 0 0" rpy="0 1.570796 0"/>
       <geometry>
-        <capsule radius="0.04" length="0.260"/>
+        <cylinder radius="0.04" length="0.260"/>
       </geometry>
     </collision>
   </link>
@@ -110,14 +110,14 @@
     <visual>
       <origin xyz="0.125 0 0" rpy="0 1.570796 0"/>
       <geometry>
-        <capsule radius="0.035" length="0.250"/>
+        <cylinder radius="0.035" length="0.250"/>
       </geometry>
       <material name="piper_silver"/>
     </visual>
     <collision>
       <origin xyz="0.125 0 0" rpy="0 1.570796 0"/>
       <geometry>
-        <capsule radius="0.035" length="0.250"/>
+        <cylinder radius="0.035" length="0.250"/>
       </geometry>
     </collision>
   </link>

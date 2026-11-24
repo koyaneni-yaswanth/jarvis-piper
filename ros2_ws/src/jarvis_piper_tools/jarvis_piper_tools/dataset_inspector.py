@@ -75,7 +75,7 @@ def main():
     parser = argparse.ArgumentParser(description="JARVIS PiPER Dataset Inspector")
     parser.add_argument(
         "--dataset-dir",
-        default="/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/raw_episodes",
+        default="/home/humble/robotics/jarvis-piper/dataset/raw",
         help="Path to dataset directory",
     )
     args = parser.parse_args()

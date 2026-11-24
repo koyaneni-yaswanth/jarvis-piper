@@ -146,7 +146,13 @@ class PikaPiperMockStreamer(Node):
         cv2.line(rgb_canvas, (cx - 35, cy - 40), (cx - 35, cy + 10), (0, 255, 255), 4)
         cv2.line(rgb_canvas, (cx + 35, cy - 40), (cx + 35, cy + 10), (0, 255, 255), 4)
 
-        img_msg = self.bridge.cv2_to_imgmsg(rgb_canvas, encoding="bgr8")
+        img_msg = Image()
+        img_msg.height = rgb_canvas.shape[0]
+        img_msg.width = rgb_canvas.shape[1]
+        img_msg.encoding = "bgr8"
+        img_msg.is_bigendian = 0
+        img_msg.step = rgb_canvas.shape[1] * 3
+        img_msg.data = rgb_canvas.tobytes()
         img_msg.header.stamp = now_msg
         img_msg.header.frame_id = "camera_color_optical_frame"
         self.pub_rgb.publish(img_msg)
@@ -154,7 +160,13 @@ class PikaPiperMockStreamer(Node):
         # Synthetic 16-bit millimeter depth map
         depth_canvas = np.full((480, 640), fill_value=1200, dtype=np.uint16)
         depth_canvas[cy - 25 : cy + 25, cx - 25 : cx + 25] = 750  # Object closer
-        depth_msg = self.bridge.cv2_to_imgmsg(depth_canvas, encoding="16UC1")
+        depth_msg = Image()
+        depth_msg.height = depth_canvas.shape[0]
+        depth_msg.width = depth_canvas.shape[1]
+        depth_msg.encoding = "16UC1"
+        depth_msg.is_bigendian = 0
+        depth_msg.step = depth_canvas.shape[1] * 2
+        depth_msg.data = depth_canvas.tobytes()
         depth_msg.header.stamp = now_msg
         depth_msg.header.frame_id = "camera_depth_optical_frame"
         self.pub_depth.publish(depth_msg)

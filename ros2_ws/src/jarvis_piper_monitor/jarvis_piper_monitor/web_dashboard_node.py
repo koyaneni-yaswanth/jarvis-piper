@@ -245,8 +245,8 @@ class JarvisPiperWebDashboardNode(Node):
     def __init__(self):
         super().__init__("jarvis_piper_web_dashboard")
         self.declare_parameter("port", 8080)
-        self.declare_parameter("data_dir", "/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/raw_episodes")
-        self.declare_parameter("export_dir", "/mnt/d/yaswanth/ranger mini/jarvis_piper_ws/data/exports")
+        self.declare_parameter("data_dir", "/home/humble/robotics/jarvis-piper/dataset/raw")
+        self.declare_parameter("export_dir", "/home/humble/robotics/jarvis-piper/dataset/exports")
 
         self.port = self.get_parameter("port").value
         self.data_dir = self.get_parameter("data_dir").value

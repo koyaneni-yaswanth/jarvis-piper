@@ -101,6 +101,8 @@ def run_pick_and_place_episode(
     def step_and_capture(target_q, stroke):
         o, r, done, info = env.step(target_q, target_gripper_stroke=stroke)
         env.sync_viewer()
+        if gui_sync:
+            time.sleep(0.015)
 
         if save_frames and (env.step_count % frame_stride == 0):
             try:
@@ -261,7 +263,19 @@ def main():
         print(f" Benchmark Wall Clock   : {bench_elapsed:.2f} s ({bench_elapsed/args.benchmark_seeds:.2f}s per episode)")
         print(f" JSON Summary Report    : {report_p.resolve()}")
         print("=" * 80)
+        if args.gui and env.viewer is not None:
+        print("\n[INFO] Simulation finished. Inspect the robot or close the viewer window to exit.")
+        try:
+            while env.viewer.is_running():
+                env.sync_viewer()
+                time.sleep(0.02)
+        except (KeyboardInterrupt, Exception):
+            pass
+
+    try:
         env.close()
+    except Exception:
+        pass
         return
 
     # Single Episode Execution
@@ -311,7 +325,19 @@ def main():
             with open(ep_dir / "metadata.json", "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=2)
 
-    env.close()
+    if args.gui and env.viewer is not None:
+        print("\n[INFO] Simulation finished. Inspect the robot or close the viewer window to exit.")
+        try:
+            while env.viewer.is_running():
+                env.sync_viewer()
+                time.sleep(0.02)
+        except (KeyboardInterrupt, Exception):
+            pass
+
+    try:
+        env.close()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+# JARVIS-PiPER Simulation Mode Configuration
+mode: "simulation"
+
+simulator:
+  engine: "gazebo_harmonic"
+  world: "red_cube_world.sdf"
+  headless: true
+  use_sim_time: true
+
+arm:
+  model: "PiPER_6DOF"
+  joint_states_topic: "/joint_states"
+  controller_action: "/piper_arm_controller/follow_joint_trajectory"
+
+gripper:
+  controller_action: "/piper_gripper_controller/follow_joint_trajectory"
+  feedback_topic: "/joint_states"
+
+cameras:
+  wrist:
+    topic: "/camera"
+  depth:
+    topic: "/camera/depth_image"

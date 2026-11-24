@@ -1,0 +1,10 @@
+# Local Machine Override Template
+# Copy this file to configs/local.yaml to customize machine-specific paths without git changes.
+system:
+  mode: "mock" # Set to "hardware" when testing on physical robot station
+
+paths:
+  raw_data_dir: "dataset/raw"
+
+pika:
+  workspace_path: "/home/user/pika_ros"

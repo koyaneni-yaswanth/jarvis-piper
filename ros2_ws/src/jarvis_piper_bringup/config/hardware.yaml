@@ -1,0 +1,56 @@
+# JARVIS-PiPER Physical Hardware Configuration
+mode: "hardware"
+
+arm:
+  model: "PiPER_6DOF"
+  can_interface: "can0"
+  can_bitrate: 1000000
+  base_frame: "base_link"
+  tcp_frame: "piper_gripper_base"
+  joints:
+    - name: "piper_joint1"
+      min_rad: -3.1416
+      max_rad: 3.1416
+    - name: "piper_joint2"
+      min_rad: -1.5708
+      max_rad: 1.5708
+    - name: "piper_joint3"
+      min_rad: -1.5708
+      max_rad: 2.8000
+    - name: "piper_joint4"
+      min_rad: -3.1416
+      max_rad: 3.1416
+    - name: "piper_joint5"
+      min_rad: -1.5708
+      max_rad: 1.5708
+    - name: "piper_joint6"
+      min_rad: -3.1416
+      max_rad: 3.1416
+
+gripper:
+  model: "PIKA_Parallel_Gripper"
+  stroke_min_m: 0.000
+  stroke_max_m: 0.035
+  close_target_m: 0.000
+  open_target_m: 0.035
+
+teleoperation:
+  device: "PIKA_Sense"
+  pose_topic: "/pika_pose"
+  trigger_topic: "/pika/button_events"
+  clutch_button_id: 1
+
+cameras:
+  wrist:
+    topic: "/camera/color/image_raw"
+    width: 640
+    height: 480
+    fps: 30
+  overhead:
+    topic: "/overhead_camera/color/image_raw"
+    width: 640
+    height: 480
+    fps: 30
+  depth:
+    topic: "/camera/depth/image_rect_raw"
+    encoding: "16UC1"
